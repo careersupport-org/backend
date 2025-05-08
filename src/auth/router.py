@@ -7,6 +7,8 @@ from dotenv import load_dotenv
 from sqlalchemy.orm import Session
 from database import get_db
 from .service import KakaoUserService
+from .exceptions import JWTException
+from .utils import create_access_token
 
 load_dotenv(".env")
 
@@ -52,20 +54,23 @@ async def kakao_callback(code: str, db: Session = Depends(get_db)):
             # 사용자 정보 저장 또는 업데이트
             user = KakaoUserService.create_or_update_user(db, user_data)
             
+            # JWT 토큰 생성
+            token_data = {
+                "sub": str(user.id),
+                "kakao_id": str(user.kakao_id),
+                "nickname": user.nickname
+            }
+            access_token = create_access_token(data=token_data)
+            
             return {
-                "message": "로그인 성공",
-                "user_info": user_data,
-                "db_user": {
-                    "id": user.id,
-                    "kakao_id": user.kakao_id,
-                    "nickname": user.nickname,
-                    "profile_image": user.profile_image,
-                    "created_at": user.created_at,
-                    "last_logined_at": user.last_logined_at
-                }
+                "code": "200",
+                "access_token": access_token,
+                "token_type": "bearer"
             }
             
     except httpx.HTTPError as e:
         raise HTTPException(status_code=400, detail=f"카카오 로그인 처리 중 오류 발생: {str(e)}")
+    except JWTException as e:
+        raise HTTPException(status_code=401, detail=e.message)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"서버 오류: {str(e)}")
