@@ -2,7 +2,7 @@ from sqlalchemy.orm import Session
 from src.auth.models import KakaoUser
 from datetime import datetime
 
-class KakaoUserService:
+class UserService:
     @staticmethod
     def get_user_by_kakao_id(db: Session, kakao_id: int):
         return db.query(KakaoUser).filter(KakaoUser.kakao_id == kakao_id).first()
@@ -13,7 +13,7 @@ class KakaoUserService:
         nickname = user_info["properties"]["nickname"]
         profile_image = user_info["properties"]["profile_image"]
 
-        user = KakaoUserService.get_user_by_kakao_id(db, kakao_id)
+        user = UserService.get_user_by_kakao_id(db, kakao_id)
         
         if user:
             # 기존 사용자 정보 업데이트

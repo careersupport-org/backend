@@ -2,7 +2,7 @@ import pytest
 from datetime import datetime
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-from src.auth.service import KakaoUserService
+from src.auth.service import UserService
 from src.auth.models import Base, KakaoUser
 
 # 테스트용 데이터베이스 설정
@@ -49,7 +49,7 @@ def test_get_user_by_kakao_id_existing_user(db_session, sample_user_info):
     db_session.commit()
     
     # When: 카카오 ID로 사용자 조회
-    found_user = KakaoUserService.get_user_by_kakao_id(db_session, sample_user_info["id"])
+    found_user = UserService.get_user_by_kakao_id(db_session, sample_user_info["id"])
     
     # Then: 사용자 정보가 일치해야 함
     assert found_user is not None
@@ -67,7 +67,7 @@ def test_get_user_by_kakao_id_nonexistent_user(db_session):
     # Given: 데이터베이스가 비어있음
     
     # When: 존재하지 않는 카카오 ID로 사용자 조회
-    found_user = KakaoUserService.get_user_by_kakao_id(db_session, 999999999)
+    found_user = UserService.get_user_by_kakao_id(db_session, 999999999)
     
     # Then: None이 반환되어야 함
     assert found_user is None
@@ -82,7 +82,7 @@ def test_create_or_update_user_new_user(db_session, sample_user_info):
     # Given: 데이터베이스가 비어있음
     
     # When: 새로운 사용자 생성
-    created_user = KakaoUserService.create_or_update_user(db_session, sample_user_info)
+    created_user = UserService.create_or_update_user(db_session, sample_user_info)
     
     # Then: 사용자가 정상적으로 생성되어야 함
     assert created_user is not None
@@ -108,7 +108,7 @@ def test_create_or_update_user_existing_user(db_session, sample_user_info):
     db_session.commit()
     
     # When: 사용자 정보 업데이트
-    updated_user = KakaoUserService.create_or_update_user(db_session, sample_user_info)
+    updated_user = UserService.create_or_update_user(db_session, sample_user_info)
     
     # Then: 사용자 정보가 업데이트되어야 함
     assert updated_user is not None
@@ -135,4 +135,4 @@ def test_create_or_update_user_invalid_info(db_session):
     
     # When & Then: KeyError 예외 발생 확인
     with pytest.raises(KeyError):
-        KakaoUserService.create_or_update_user(db_session, invalid_user_info) 
+        UserService.create_or_update_user(db_session, invalid_user_info) 
