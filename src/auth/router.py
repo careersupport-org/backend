@@ -62,7 +62,7 @@ async def kakao_callback(code: str, db: Session = Depends(get_db)):
             
             # JWT 토큰 생성
             token_data = {
-                "sub": str(user.id),
+                "sub": user.uid,
                 "kakao_id": str(user.kakao_id),
                 "nickname": user.nickname
             }
@@ -170,7 +170,7 @@ async def get_current_user(
         HTTPException: 인증되지 않은 경우
     """
     return UserInfo(
-        id=current_user.id,
+        id=current_user.uid,
         nickname=current_user.nickname,
         profile_image=current_user.profile_image
     )

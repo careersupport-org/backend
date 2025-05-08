@@ -4,6 +4,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from src.auth.service import UserService
 from src.auth.models import Base, KakaoUser
+import nanoid
 
 # 테스트용 데이터베이스 설정
 SQLALCHEMY_DATABASE_URL = "sqlite:///./sqp_test.db"
@@ -41,6 +42,7 @@ def test_get_user_by_kakao_id_existing_user(db_session, sample_user_info):
     """
     # Given: 데이터베이스에 사용자 생성
     user = KakaoUser(
+        uid=nanoid.generate(size=10),
         kakao_id=sample_user_info["id"],
         nickname=sample_user_info["properties"]["nickname"],
         profile_image=sample_user_info["properties"]["profile_image"]
@@ -100,6 +102,7 @@ def test_create_or_update_user_existing_user(db_session, sample_user_info):
     """
     # Given: 기존 사용자 생성
     original_user = KakaoUser(
+        uid=nanoid.generate(size=10),
         kakao_id=sample_user_info["id"],
         nickname="이전닉네임",
         profile_image="https://example.com/old_profile.jpg"

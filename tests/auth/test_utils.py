@@ -56,7 +56,7 @@ def test_verify_token_success(test_data):
     result = verify_token(token)
     
     # Then: 페이로드가 올바르게 검증되어야 함
-    assert result.id == test_data["sub"]
+    assert result.uid == test_data["sub"]
     assert result.nickname == test_data["nickname"]
 
 def test_verify_token_expired():

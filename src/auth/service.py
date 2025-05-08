@@ -1,7 +1,7 @@
 from sqlalchemy.orm import Session
 from src.auth.models import KakaoUser
-from datetime import datetime
-
+from datetime import datetime, UTC
+import nanoid
 class UserService:
     @staticmethod
     def get_user_by_kakao_id(db: Session, kakao_id: int):
@@ -19,11 +19,12 @@ class UserService:
             # 기존 사용자 정보 업데이트
             user.nickname = nickname
             user.profile_image = profile_image
-            user.last_logined_at = datetime.utcnow()
+            user.last_logined_at = datetime.now(UTC)
         else:
             # 새 사용자 생성
             user = KakaoUser(
                 kakao_id=kakao_id,
+                uid=nanoid.generate(size=10),
                 nickname=nickname,
                 profile_image=profile_image
             )

@@ -10,3 +10,4 @@ pytest-asyncio
 requests
 aiohttp
 pytest-cov
+nanoid
