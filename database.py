@@ -21,11 +21,4 @@ def get_db():
     try:
         yield db
     finally:
-        db.close()
-
-# TODO: 테이블 생성은 실제 서버 실행 시에는 적용하면 안됨.
-# 모델 import
-from src.auth.models import KakaoUser
-
-# 테이블 생성
-Base.metadata.create_all(bind=engine) 
+        db.close() 

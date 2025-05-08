@@ -1,11 +1,11 @@
 from sqlalchemy.orm import Session
-from . import models
+from src.auth.models import KakaoUser
 from datetime import datetime
 
 class KakaoUserService:
     @staticmethod
     def get_user_by_kakao_id(db: Session, kakao_id: int):
-        return db.query(models.KakaoUser).filter(models.KakaoUser.kakao_id == kakao_id).first()
+        return db.query(KakaoUser).filter(KakaoUser.kakao_id == kakao_id).first()
 
     @staticmethod
     def create_or_update_user(db: Session, user_info: dict):
@@ -22,7 +22,7 @@ class KakaoUserService:
             user.last_logined_at = datetime.utcnow()
         else:
             # 새 사용자 생성
-            user = models.KakaoUser(
+            user = KakaoUser(
                 kakao_id=kakao_id,
                 nickname=nickname,
                 profile_image=profile_image
