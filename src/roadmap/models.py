@@ -2,6 +2,7 @@ from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Boolean, T
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from database import Base
+import nanoid
 
 # RoadmapStep과 Tag의 다대다 관계를 위한 중간 테이블
 roadmap_step_tags = Table(
@@ -16,6 +17,7 @@ class Roadmap(Base):
     __tablename__ = "roadmaps"
 
     id = Column(Integer, primary_key=True, index=True)
+    uid = Column(String(10), unique=True, index=True, nullable=False)
     user_id = Column(Integer, ForeignKey('kakao_users.id'), nullable=False)
     title = Column(String(200), nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
@@ -33,6 +35,7 @@ class RoadmapStep(Base):
     __tablename__ = "roadmap_steps"
 
     id = Column(Integer, primary_key=True, index=True)
+    uid = Column(String(10), unique=True, index=True, nullable=False)
     roadmap_id = Column(Integer, ForeignKey('roadmaps.id'), nullable=False)
     step = Column(Integer, nullable=False)
     title = Column(String(200), nullable=False)
@@ -51,6 +54,7 @@ class Tag(Base):
     __tablename__ = "tags"
 
     id = Column(Integer, primary_key=True, index=True)
+    uid = Column(String(10), unique=True, index=True, nullable=False)
     name = Column(String(50), unique=True, nullable=False)
 
     # 관계 설정

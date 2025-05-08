@@ -11,3 +11,5 @@ requests
 aiohttp
 pytest-cov
 nanoid
+langchain
+langchain_openai

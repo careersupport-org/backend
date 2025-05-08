@@ -58,4 +58,23 @@ class UserService:
         user.profile = profile
         db.commit()
         db.refresh(user)
+        return user
+
+    @staticmethod
+    def find_user(db: Session, user_uid: str) -> KakaoUser:
+        """사용자 프로필을 조회합니다.
+        
+        Args:
+            db (Session): 데이터베이스 세션
+            user_uid (str): 사용자 UID
+            
+        Returns:
+            KakaoUser: 사용자 프로필 정보
+            
+        Raises:
+            UserNotFoundError: 사용자를 찾을 수 없는 경우
+        """
+        user = db.query(KakaoUser).filter(KakaoUser.uid == user_uid).first()
+        if not user:
+            raise UserNotFoundError()
         return user 

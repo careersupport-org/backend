@@ -17,11 +17,9 @@ def db_session():
     """테스트용 데이터베이스 세션을 생성하고 테스트 후 정리합니다."""
     Base.metadata.create_all(bind=engine)
     db = TestingSessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
-        Base.metadata.drop_all(bind=engine)
+
+    yield db
+
 
 @pytest.fixture
 def sample_user_info():
@@ -60,6 +58,9 @@ def test_get_user_by_kakao_id_existing_user(db_session, sample_user_info):
     assert found_user.nickname == sample_user_info["properties"]["nickname"]
     assert found_user.profile_image == sample_user_info["properties"]["profile_image"]
 
+    db_session.query(KakaoUser).delete()
+    db_session.commit()
+
 def test_get_user_by_kakao_id_nonexistent_user(db_session):
     """시나리오: 존재하지 않는 카카오 ID로 사용자 조회
     
@@ -74,6 +75,8 @@ def test_get_user_by_kakao_id_nonexistent_user(db_session):
     
     # Then: None이 반환되어야 함
     assert found_user is None
+    db_session.query(KakaoUser).delete()
+    db_session.commit()
 
 def test_create_or_update_user_new_user(db_session, sample_user_info):
     """시나리오: 새로운 사용자 생성
@@ -93,6 +96,8 @@ def test_create_or_update_user_new_user(db_session, sample_user_info):
     assert created_user.nickname == sample_user_info["properties"]["nickname"]
     assert created_user.profile_image == sample_user_info["properties"]["profile_image"]
     assert created_user.last_logined_at is not None
+    db_session.query(KakaoUser).delete()
+    db_session.commit()
 
 def test_create_or_update_user_existing_user(db_session, sample_user_info):
     """시나리오: 기존 사용자 정보 업데이트
@@ -120,6 +125,9 @@ def test_create_or_update_user_existing_user(db_session, sample_user_info):
     assert updated_user.nickname == sample_user_info["properties"]["nickname"]
     assert updated_user.profile_image == sample_user_info["properties"]["profile_image"]
     assert updated_user.last_logined_at is not None
+    db_session.query(KakaoUser).delete()
+    db_session.commit()
+    
 
 def test_create_or_update_user_invalid_info(db_session):
     """시나리오: 잘못된 사용자 정보로 사용자 생성/업데이트 시도
@@ -140,6 +148,9 @@ def test_create_or_update_user_invalid_info(db_session):
     # When & Then: KeyError 예외 발생 확인
     with pytest.raises(KeyError):
         UserService.create_or_update_user(db_session, invalid_user_info)
+
+    db_session.query(KakaoUser).delete()
+    db_session.commit()
 
 def test_update_user_profile_success(db_session):
     """시나리오: 사용자 프로필 업데이트 성공
@@ -172,6 +183,9 @@ def test_update_user_profile_success(db_session):
     assert updated_user.nickname == "테스트유저"
     assert updated_user.profile_image == "https://example.com/profile.jpg"
 
+    db_session.query(KakaoUser).delete()
+    db_session.commit()
+
 def test_update_user_profile_not_found(db_session):
     """시나리오: 존재하지 않는 사용자의 프로필 업데이트 시도
     
@@ -188,6 +202,8 @@ def test_update_user_profile_not_found(db_session):
             user_uid="nonexistent",
             profile="새로운 프로필"
         )
+    db_session.query(KakaoUser).delete()
+    db_session.commit()
 
 def test_update_user_profile_empty(db_session):
     """시나리오: 빈 프로필로 업데이트
@@ -218,4 +234,53 @@ def test_update_user_profile_empty(db_session):
     assert updated_user.profile == ""
     assert updated_user.uid == "test123"
     assert updated_user.nickname == "테스트유저"
-    assert updated_user.profile_image == "https://example.com/profile.jpg" 
+    assert updated_user.profile_image == "https://example.com/profile.jpg"
+    db_session.query(KakaoUser).delete()
+    db_session.commit()
+
+def test_find_user_success(db_session):
+    """사용자 조회 성공 테스트"""
+    # Given
+    user = KakaoUser(
+        kakao_id=123456789,
+        uid="test_uid_1",
+        nickname="Test User",
+        profile_image="https://example.com/profile.jpg",
+        profile="Test profile",
+        last_logined_at=datetime.now(UTC)
+    )
+    db_session.add(user)
+    db_session.commit()
+
+    # When
+    found_user = UserService.find_user(db_session, "test_uid_1")
+
+    # Then
+    assert found_user is not None
+    assert found_user.uid == "test_uid_1"
+    assert found_user.nickname == "Test User"
+    assert found_user.profile_image == "https://example.com/profile.jpg"
+    assert found_user.profile == "Test profile"
+
+    db_session.query(KakaoUser).delete()
+    db_session.commit()
+
+def test_find_user_profile_not_found(db_session):
+    """존재하지 않는 사용자 조회 테스트"""
+    # Given
+    non_existent_uid = "non_existent_uid"
+
+    # When & Then
+    with pytest.raises(UserNotFoundError) as exc_info:
+        UserService.find_user(db_session, non_existent_uid)
+    
+def test_find_user_profile_empty_db(db_session):
+    """빈 데이터베이스에서 사용자 프로필 조회 테스트"""
+    # Given
+    test_uid = "test_uid_2"
+
+    # When & Then
+    with pytest.raises(UserNotFoundError) as exc_info:
+        UserService.find_user(db_session, test_uid)
+    db_session.query(KakaoUser).delete()
+    db_session.commit()
