@@ -7,9 +7,9 @@ from dotenv import load_dotenv
 from sqlalchemy.orm import Session
 from database import get_db
 from .service import UserService
-from .exceptions import JWTException, TokenExpiredError, InvalidTokenError
+from .exceptions import JWTException, TokenExpiredError, InvalidTokenError, UserNotFoundError
 from .utils import create_access_token, verify_token
-from .schemas import LoginResponse, ErrorResponse, UserInfo
+from .schemas import LoginResponse, ErrorResponse, UserInfo, ProfileUpdateRequest
 from .dtos import UserDTO
 
 load_dotenv(".env")
@@ -174,3 +174,41 @@ async def get_current_user(
         nickname=current_user.nickname,
         profile_image=current_user.profile_image
     )
+
+@router.put("/me/profile", response_model=UserInfo, responses={
+    401: {"model": ErrorResponse, "description": "인증 오류"},
+    404: {"model": ErrorResponse, "description": "사용자를 찾을 수 없음"}
+})
+async def update_profile(
+    profile_update: ProfileUpdateRequest,
+    current_user: UserDTO = Depends(get_current_user_from_token),
+    db: Session = Depends(get_db)
+):
+    """사용자 프로필을 업데이트합니다.
+    
+    Args:
+        profile_update (ProfileUpdateRequest): 업데이트할 프로필 정보
+        current_user (UserDTO): 현재 인증된 사용자 정보
+        db (Session): 데이터베이스 세션
+        
+    Returns:
+        UserInfo: 업데이트된 사용자 정보
+        
+    Raises:
+        HTTPException: 인증되지 않은 경우 또는 사용자를 찾을 수 없는 경우
+    """
+    try:
+        user = UserService.update_user_profile(db, current_user.uid, profile_update.profile)
+        return UserInfo(
+            id=user.uid,
+            nickname=user.nickname,
+            profile_image=user.profile_image
+        )
+    except UserNotFoundError:
+        raise HTTPException(
+            status_code=401,
+            detail=ErrorResponse(
+                code="401",
+                detail="사용자를 찾을 수 없습니다"
+            ).dict()
+        )

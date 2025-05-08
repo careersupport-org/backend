@@ -2,6 +2,8 @@ from sqlalchemy.orm import Session
 from src.auth.models import KakaoUser
 from datetime import datetime, UTC
 import nanoid
+from .exceptions import UserNotFoundError
+
 class UserService:
     @staticmethod
     def get_user_by_kakao_id(db: Session, kakao_id: int):
@@ -30,6 +32,30 @@ class UserService:
             )
             db.add(user)
         
+        db.commit()
+        db.refresh(user)
+        return user
+
+    @staticmethod
+    def update_user_profile(db: Session, user_uid: str, profile: str) -> KakaoUser:
+        """사용자 프로필을 업데이트합니다.
+        
+        Args:
+            db (Session): 데이터베이스 세션
+            user_uid (str): 사용자 UID
+            profile (str): 업데이트할 프로필 내용
+            
+        Returns:
+            KakaoUser: 업데이트된 사용자 정보
+            
+        Raises:
+            UserNotFoundError: 사용자를 찾을 수 없는 경우
+        """
+        user = db.query(KakaoUser).filter(KakaoUser.uid == user_uid).first()
+        if not user:
+            raise UserNotFoundError()
+            
+        user.profile = profile
         db.commit()
         db.refresh(user)
         return user 

@@ -10,6 +10,7 @@ class KakaoUser(Base):
     kakao_id = Column(BigInteger, unique=True, index=True, nullable=False)
     nickname = Column(String(100), nullable=False)
     profile_image = Column(String(500), nullable=True)
+    profile = Column(String(500), nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     last_logined_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
 

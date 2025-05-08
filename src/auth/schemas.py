@@ -53,3 +53,17 @@ class UserInfo(BaseModel):
         description="사용자 프로필 이미지 URL"
     )
 
+class ProfileUpdateRequest(BaseModel):
+    """프로필 업데이트 요청"""
+    profile: str = Field(
+        description="사용자 프로필",
+        max_length=500
+    )
+
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "profile": "안녕하세요! 저는 개발자입니다."
+            }
+        }
+

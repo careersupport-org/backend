@@ -18,3 +18,8 @@ class TokenDecodeError(JWTException):
     """토큰 디코딩 중 오류가 발생한 경우의 예외"""
     def __init__(self):
         super().__init__("Could not decode token")
+
+class UserNotFoundError(Exception):
+    """사용자를 찾을 수 없는 경우 발생하는 예외"""
+    def __init__(self):
+        super().__init__("User not found")

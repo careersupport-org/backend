@@ -1,10 +1,11 @@
 import pytest
-from datetime import datetime
+from datetime import datetime, UTC
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from src.auth.service import UserService
 from src.auth.models import Base, KakaoUser
 import nanoid
+from src.auth.exceptions import UserNotFoundError
 
 # 테스트용 데이터베이스 설정
 SQLALCHEMY_DATABASE_URL = "sqlite:///./sqp_test.db"
@@ -138,4 +139,83 @@ def test_create_or_update_user_invalid_info(db_session):
     
     # When & Then: KeyError 예외 발생 확인
     with pytest.raises(KeyError):
-        UserService.create_or_update_user(db_session, invalid_user_info) 
+        UserService.create_or_update_user(db_session, invalid_user_info)
+
+def test_update_user_profile_success(db_session):
+    """시나리오: 사용자 프로필 업데이트 성공
+    
+    Given: 데이터베이스에 사용자가 존재할 때
+    When: update_user_profile 메서드를 호출하면
+    Then: 사용자의 프로필이 업데이트되어야 함
+    """
+    # Given: 테스트용 사용자 생성
+    user = KakaoUser(
+        kakao_id=123456789,
+        uid="test123",
+        nickname="테스트유저",
+        profile_image="https://example.com/profile.jpg",
+        last_logined_at=datetime.now(UTC)
+    )
+    db_session.add(user)
+    db_session.commit()
+    
+    # When: 프로필 업데이트
+    updated_user = UserService.update_user_profile(
+        db=db_session,
+        user_uid="test123",
+        profile="안녕하세요! 저는 개발자입니다."
+    )
+    
+    # Then: 프로필이 업데이트되었는지 확인
+    assert updated_user.profile == "안녕하세요! 저는 개발자입니다."
+    assert updated_user.uid == "test123"
+    assert updated_user.nickname == "테스트유저"
+    assert updated_user.profile_image == "https://example.com/profile.jpg"
+
+def test_update_user_profile_not_found(db_session):
+    """시나리오: 존재하지 않는 사용자의 프로필 업데이트 시도
+    
+    Given: 데이터베이스에 사용자가 존재하지 않을 때
+    When: update_user_profile 메서드를 호출하면
+    Then: UserNotFoundError가 발생해야 함
+    """
+    # Given: 데이터베이스가 비어있는 상태
+    
+    # When & Then: 존재하지 않는 사용자의 프로필 업데이트 시도
+    with pytest.raises(UserNotFoundError):
+        UserService.update_user_profile(
+            db=db_session,
+            user_uid="nonexistent",
+            profile="새로운 프로필"
+        )
+
+def test_update_user_profile_empty(db_session):
+    """시나리오: 빈 프로필로 업데이트
+    
+    Given: 데이터베이스에 사용자가 존재할 때
+    When: 빈 문자열로 프로필을 업데이트하면
+    Then: 프로필이 빈 문자열로 업데이트되어야 함
+    """
+    # Given: 테스트용 사용자 생성
+    user = KakaoUser(
+        kakao_id=123456789,
+        uid="test123",
+        nickname="테스트유저",
+        profile_image="https://example.com/profile.jpg",
+        last_logined_at=datetime.now(UTC)
+    )
+    db_session.add(user)
+    db_session.commit()
+    
+    # When: 빈 프로필로 업데이트
+    updated_user = UserService.update_user_profile(
+        db=db_session,
+        user_uid="test123",
+        profile=""
+    )
+    
+    # Then: 프로필이 빈 문자열로 업데이트되었는지 확인
+    assert updated_user.profile == ""
+    assert updated_user.uid == "test123"
+    assert updated_user.nickname == "테스트유저"
+    assert updated_user.profile_image == "https://example.com/profile.jpg" 
