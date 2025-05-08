@@ -6,3 +6,7 @@ PyJWT
 pytest
 pydantic
 python-dotenv
+pytest-asyncio
+requests
+aiohttp
+pytest-cov
