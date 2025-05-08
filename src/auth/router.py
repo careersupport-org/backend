@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, Request, Depends
+from fastapi import APIRouter, HTTPException, Request, Depends, Header
 from fastapi.responses import RedirectResponse
 import httpx
 from typing import Optional
@@ -7,9 +7,10 @@ from dotenv import load_dotenv
 from sqlalchemy.orm import Session
 from database import get_db
 from .service import UserService
-from .exceptions import JWTException
-from .utils import create_access_token
-from .schemas import LoginResponse, ErrorResponse
+from .exceptions import JWTException, TokenExpiredError, InvalidTokenError
+from .utils import create_access_token, verify_token
+from .schemas import LoginResponse, ErrorResponse, UserInfo
+from .dtos import UserDTO
 
 load_dotenv(".env")
 
@@ -97,3 +98,79 @@ async def kakao_callback(code: str, db: Session = Depends(get_db)):
                 detail=f"서버 오류: {str(e)}"
             ).dict()
         )
+
+async def get_current_user_from_token(
+    authorization: str = Header(..., description="Bearer token"),
+    db: Session = Depends(get_db)
+) -> UserDTO:
+    """JWT 토큰에서 현재 사용자 정보를 추출합니다.
+    
+    Args:
+        authorization (str): Authorization 헤더의 Bearer 토큰
+        db (Session): 데이터베이스 세션
+        
+    Returns:
+        UserDTO: 현재 인증된 사용자 정보
+        
+    Raises:
+        HTTPException: 토큰이 없거나 유효하지 않은 경우
+    """
+    if not authorization or not authorization.startswith("Bearer "):
+        raise HTTPException(
+            status_code=401,
+            detail=ErrorResponse(
+                code="401",
+                detail="인증 토큰이 필요합니다"
+            ).dict()
+        )
+    
+    token = authorization.split(" ")[1]
+    try:
+        return verify_token(token)
+    except TokenExpiredError:
+        raise HTTPException(
+            status_code=401,
+            detail=ErrorResponse(
+                code="401",
+                detail="만료된 토큰입니다"
+            ).dict()
+        )
+    except InvalidTokenError:
+        raise HTTPException(
+            status_code=401,
+            detail=ErrorResponse(
+                code="401",
+                detail="유효하지 않은 토큰입니다"
+            ).dict()
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=401,
+            detail=ErrorResponse(
+                code="401",
+                detail=f"인증 오류: {str(e)}"
+            ).dict()
+        )
+
+@router.get("/me", response_model=UserInfo, responses={
+    401: {"model": ErrorResponse, "description": "인증 오류"}
+})
+async def get_current_user(
+    current_user: UserDTO = Depends(get_current_user_from_token)
+):
+    """현재 인증된 사용자 정보 반환
+    
+    Args:
+        current_user (UserDTO): 현재 인증된 사용자 정보
+        
+    Returns:
+        UserInfo: 사용자 정보
+        
+    Raises:
+        HTTPException: 인증되지 않은 경우
+    """
+    return UserInfo(
+        id=current_user.id,
+        nickname=current_user.nickname,
+        profile_image=current_user.profile_image
+    )

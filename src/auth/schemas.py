@@ -42,14 +42,14 @@ class ErrorResponse(BaseModel):
         }
 
 class UserInfo(BaseModel):
-    """카카오 사용자 정보"""
-    id: int = Field(
-        description="카카오 사용자 ID"
+    """사용자 정보"""
+    id: str = Field(
+        description="사용자 ID"
     )
-    properties: dict = Field(
-        description="카카오 사용자 프로필 정보",
-        example={
-            "nickname": "홍길동",
-            "profile_image": "https://example.com/profile.jpg"
-        }
-    ) 
+    nickname: str = Field(
+        description="사용자 닉네임"
+    )
+    profile_image: Optional[str] = Field(
+        description="사용자 프로필 이미지 URL"
+    )
+

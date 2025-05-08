@@ -53,12 +53,11 @@ def test_verify_token_success(test_data):
     token = create_access_token(test_data)
     
     # When: 토큰 검증
-    payload = verify_token(token)
+    result = verify_token(token)
     
     # Then: 페이로드가 올바르게 검증되어야 함
-    assert payload["sub"] == test_data["sub"]
-    assert payload["kakao_id"] == test_data["kakao_id"]
-    assert payload["nickname"] == test_data["nickname"]
+    assert result.id == test_data["sub"]
+    assert result.nickname == test_data["nickname"]
 
 def test_verify_token_expired():
     """만료된 JWT 토큰에 대해 적절한 예외가 발생하는지 확인"""
