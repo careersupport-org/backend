@@ -42,7 +42,5 @@ def verify_token(token: str):
         raise TokenExpiredError()
     except jwt.InvalidTokenError:
         raise InvalidTokenError()
-    except jwt.PyJWTError as e:
-        raise TokenDecodeError()
     except Exception as e:
         raise TokenDecodeError() 

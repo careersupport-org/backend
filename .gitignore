@@ -3,3 +3,5 @@ __pycache__
 .idea
 .env
 sql_app.db
+.pytest_cache
+.vscode
