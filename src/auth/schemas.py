@@ -41,7 +41,7 @@ class ErrorResponse(BaseModel):
             }
         }
 
-class UserInfo(BaseModel):
+class UserInfoSchema(BaseModel):
     """사용자 정보"""
     id: str = Field(
         description="사용자 ID"

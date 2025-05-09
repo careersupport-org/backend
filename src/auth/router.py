@@ -9,7 +9,7 @@ from database import get_db
 from .service import UserService
 from .exceptions import JWTException, TokenExpiredError, InvalidTokenError, UserNotFoundError
 from .utils import create_access_token, verify_token
-from .schemas import LoginResponse, ErrorResponse, UserInfo, ProfileUpdateRequest
+from .schemas import LoginResponse, ErrorResponse, UserInfoSchema, ProfileUpdateRequest
 from .dtos import UserDTO
 
 
@@ -152,7 +152,7 @@ async def get_current_user_from_token(
             ).dict()
         )
 
-@router.get("/me", response_model=UserInfo, responses={
+@router.get("/me", response_model=UserInfoSchema, responses={
     401: {"model": ErrorResponse, "description": "인증 오류"}
 })
 async def get_current_user(
@@ -169,13 +169,13 @@ async def get_current_user(
     Raises:
         HTTPException: 인증되지 않은 경우
     """
-    return UserInfo(
+    return UserInfoSchema(
         id=current_user.uid,
         nickname=current_user.nickname,
         profile_image=current_user.profile_image
     )
 
-@router.put("/me/profile", response_model=UserInfo, responses={
+@router.put("/me/profile", response_model=UserInfoSchema, responses={
     401: {"model": ErrorResponse, "description": "인증 오류"},
     404: {"model": ErrorResponse, "description": "사용자를 찾을 수 없음"}
 })
@@ -199,7 +199,7 @@ async def update_profile(
     """
     try:
         user = UserService.update_user_profile(db, current_user.uid, profile_update.profile)
-        return UserInfo(
+        return UserInfoSchema(
             id=user.uid,
             nickname=user.nickname,
             profile_image=user.profile_image
