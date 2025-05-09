@@ -1,4 +1,4 @@
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from .models import Roadmap, RoadmapStep as RoadmapStepModel, Tag
 from .config import LLMConfig
 from src.auth.service import UserService
@@ -7,12 +7,18 @@ import nanoid
 import logging
 import sys
 import traceback
-from .schemas import RoadmapListItemSchema, RoadmapDetailSchema, RoadmapStepSchema as RoadmapStepSchema, LearningResourceResponse, LearningResourceSchema
+from .schemas import (
+    RoadmapListItemSchema, RoadmapDetailSchema, RoadmapStepSchema,
+    LearningResourceResponse, LearningResourceSchema
+)
+from fastapi.responses import StreamingResponse
+import json
 
 
 class RoadmapService:
     roadmap_create_chain = LLMConfig.get_roadmap_create_llm()
     recommend_resource_chain = LLMConfig.get_recommend_resource_llm()
+    step_guide_chain = LLMConfig.get_step_guide_llm()
     logger = logging.getLogger(__name__)
 
     @classmethod
@@ -185,5 +191,58 @@ class RoadmapService:
             error_msg += f"Traceback:\n{traceback.format_exc()}"
             cls.logger.error(error_msg)
             db.rollback()
+            raise e
+
+    @classmethod
+    async def get_step_guide(cls, db: Session, step_uid: str) -> StreamingResponse:
+        """로드맵 단계에 대한 상세 가이드를 스트리밍합니다.
+        
+        Args:
+            db (Session): 데이터베이스 세션
+            step_uid (str): 로드맵 단계 UID
+            
+        Returns:
+            StreamingResponse: SSE 스트리밍 응답
+            
+        Raises:
+            Exception: 로드맵 단계를 찾을 수 없는 경우
+        """
+        # tags를 즉시 로딩하기 위해 joinedload 사용
+        step = db.query(RoadmapStepModel).options(
+            joinedload(RoadmapStepModel.tags)
+        ).filter(RoadmapStepModel.uid == step_uid).first()
+        
+        if not step:
+            raise Exception("Roadmap step not found")
+
+        try:
+            tokens = []
+            
+            async def generate():
+                try:
+                    async for chunk in cls.step_guide_chain.astream({
+                        "description": step.description,
+                        "tags": ", ".join([tag.name for tag in step.tags]),
+                        "language": "korean"
+                    }):
+                        token = chunk.content
+                        tokens.append(token)
+                        yield f"data: {json.dumps({'token': token})}\n\n"
+                except Exception as e:
+                    error_msg = f"Error in step guide streaming: {str(e)}\n"
+                    error_msg += f"Error type: {type(e).__name__}\n"
+                    error_msg += f"Traceback:\n{traceback.format_exc()}"
+                    cls.logger.error(error_msg)
+                    yield f"data: {json.dumps({'error': str(e)})}\n\n"
+
+            return StreamingResponse(
+                generate(),
+                media_type="text/event-stream"
+            )
+        except Exception as e:
+            error_msg = f"Error in get_step_guide: {str(e)}\n"
+            error_msg += f"Error type: {type(e).__name__}\n"
+            error_msg += f"Traceback:\n{traceback.format_exc()}"
+            cls.logger.error(error_msg)
             raise e
         

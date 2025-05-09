@@ -22,7 +22,7 @@ class Roadmap(Base):
     title = Column(String(200), nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
-
+    
     # 관계 설정
     steps = relationship("RoadmapStep", back_populates="roadmap", cascade="all, delete-orphan")
     user = relationship("KakaoUser", back_populates="roadmaps")
@@ -40,6 +40,7 @@ class RoadmapStep(Base):
     step = Column(Integer, nullable=False)
     title = Column(String(200), nullable=False)
     description = Column(String(1000), nullable=False)
+    guide = Column(String(2048), nullable=True)
     is_bookmarked = Column(Boolean, default=False, nullable=False)
 
     # 관계 설정

@@ -8,6 +8,7 @@ from .schemas import (
 from .service import RoadmapService
 from src.auth.router import get_current_user_from_token
 from src.auth.dtos import UserDTO
+from fastapi.responses import StreamingResponse
 
 router = APIRouter(prefix="/roadmap", tags=["roadmap"])
 
@@ -37,6 +38,48 @@ async def get_learning_resources(
     try:
         resources = await RoadmapService.recommend_learning_resources(db, step_uid)
         return resources
+    except Exception as e:
+        if str(e) == "Roadmap step not found":
+            raise HTTPException(
+                status_code=404,
+                detail=ErrorResponse(
+                    code="404",
+                    detail="로드맵 단계를 찾을 수 없습니다."
+                ).dict()
+            )
+        raise HTTPException(
+            status_code=500,
+            detail=ErrorResponse(
+                code="500",
+                detail=f"서버 오류: {str(e)}"
+            ).dict()
+        )
+
+@router.get("/step/{step_uid}/guide", responses={
+    401: {"model": ErrorResponse, "description": "인증 오류"},
+    404: {"model": ErrorResponse, "description": "로드맵 단계를 찾을 수 없음"},
+    500: {"model": ErrorResponse, "description": "서버 오류"}
+})
+async def get_step_guide(
+    step_uid: str,
+    current_user: UserDTO = Depends(get_current_user_from_token),
+    db: Session = Depends(get_db)
+) -> StreamingResponse:
+    """로드맵 단계에 대한 상세 가이드를 스트리밍합니다.
+    
+    Args:
+        step_uid (str): 로드맵 단계 UID
+        current_user (UserDTO): 현재 인증된 사용자 정보
+        db (Session): 데이터베이스 세션
+        
+    Returns:
+        StreamingResponse: SSE 스트리밍 응답
+        
+    Raises:
+        HTTPException: 인증되지 않은 경우, 로드맵 단계를 찾을 수 없는 경우 또는 서버 오류 발생 시
+    """
+    try:
+        return await RoadmapService.get_step_guide(db, step_uid)
     except Exception as e:
         if str(e) == "Roadmap step not found":
             raise HTTPException(

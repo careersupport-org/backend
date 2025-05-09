@@ -163,4 +163,4 @@ class ErrorResponse(BaseModel):
                 "code": "400",
                 "detail": "잘못된 요청입니다."
             }
-        } 
+        }

@@ -2,16 +2,18 @@ from langchain_openai import ChatOpenAI
 from langchain.prompts import load_prompt
 from langchain_core.output_parsers import JsonOutputParser
 from langchain.schema.runnable import RunnablePassthrough
-from .prompt_models import RoadMap, RoadMapStep, LearningResourceList
+from .prompt_models import RoadMap, LearningResourceList
 import os
 
 model_name = os.environ["ROADMAP_CREATE_MODEL_NAME"]
 api_base = os.environ["OPENAI_API_BASE"]
 api_key = os.environ["OPENAI_API_KEY"]
+
 class LLMConfig:
     
     roadmap_create_llm = None
     recommend_resource_llm = None
+    step_guide_llm = None
 
     @classmethod
     def get_roadmap_create_llm(cls):
@@ -75,3 +77,22 @@ class LLMConfig:
 
         cls.recommend_resource_llm = chain
         return cls.recommend_resource_llm
+
+    @classmethod
+    def get_step_guide_llm(cls):
+        if cls.step_guide_llm is not None:
+            return cls.step_guide_llm
+
+        llm = ChatOpenAI(
+            model = model_name,
+            temperature=0.7,
+            base_url=api_base,
+            api_key=api_key,
+            max_completion_tokens=2048
+        )
+
+        prompt = load_prompt("prompts/guide_step_prompt.json")
+        chain = prompt | llm
+
+        cls.step_guide_llm = chain
+        return cls.step_guide_llm

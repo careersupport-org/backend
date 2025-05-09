@@ -1,0 +1,17 @@
+{
+    "name": null,
+    "input_variables": [
+        "description",
+        "language",
+        "tags"
+    ],
+    "optional_variables": [],
+    "output_parser": null,
+    "partial_variables": {},
+    "metadata": null,
+    "tags": null,
+    "template": "\nAs an expert Learning Path Designer for developers, your task is to create a comprehensive, structured learning guide based on the provided technical skill information.\nAlways respond in {language} as specified by the user.\n\n### SKILL INFORMATION\n- Description: {description}\n- Tags: {tags}\n\n### LEARNING GUIDE REQUIREMENTS\nCreate a detailed, actionable learning path that helps developers master this technical skill efficiently. Your guide should include:\n\n1. **Skill Overview**\n   - A concise explanation of the skill's importance in the development ecosystem\n   - Primary use cases and real-world applications\n   - Prerequisites and related technologies\n\n2. **Learning Path Structure**\n   - Beginner level (fundamental concepts and basic implementation)\n   - Intermediate level (advanced concepts and practical applications)\n   - Expert level (optimization techniques, best practices, and cutting-edge implementations)\n\n3. **Learning Milestones**\n   - Clear, measurable objectives for each learning stage\n   - Small projects to build for skill validation\n   - Ways to assess mastery before progressing\n\n4. **Industry Insights**\n   - Current trends and future outlook for this technology\n   - How this skill connects to related technologies in the ecosystem\n   - Common pitfalls to avoid when learning this skill\n\n6. **Community Resources**\n   - Forums, communities, and discussion platforms\n   - Conferences, meetups, or events focused on this technology\n   - Notable experts to follow for ongoing learning\n\nFormat your response with clear headings, bullet points, and a logical progression that guides the developer from beginner to expert level.\nIMPORTANT : Always respond in {language} as specified by the user.\n",
+    "template_format": "f-string",
+    "validate_template": false,
+    "_type": "prompt"
+}
