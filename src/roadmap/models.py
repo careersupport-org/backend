@@ -55,7 +55,7 @@ class Tag(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     uid = Column(String(10), unique=True, index=True, nullable=False)
-    name = Column(String(50), unique=True, nullable=False)
+    name = Column(String(50), unique=False, nullable=False)
 
     # 관계 설정
     steps = relationship("RoadmapStep", secondary=roadmap_step_tags, back_populates="tags")

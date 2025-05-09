@@ -33,7 +33,7 @@ async def create_roadmap(
     """
     try:
         # 로드맵 생성
-        generated_roadmap_id = RoadmapService.create_roadmap(
+        generated_roadmap_id = await RoadmapService.create_roadmap(
             db=db,
             user_uid=current_user.uid,
             target_job=roadmap_request.target_job,

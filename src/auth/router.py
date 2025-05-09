@@ -3,7 +3,7 @@ from fastapi.responses import RedirectResponse
 import httpx
 from typing import Optional
 import os
-from dotenv import load_dotenv
+
 from sqlalchemy.orm import Session
 from database import get_db
 from .service import UserService
@@ -12,7 +12,7 @@ from .utils import create_access_token, verify_token
 from .schemas import LoginResponse, ErrorResponse, UserInfo, ProfileUpdateRequest
 from .dtos import UserDTO
 
-load_dotenv(".env")
+
 
 router = APIRouter(prefix="/oauth", tags=["oauth"])
 

@@ -4,7 +4,16 @@ from src.auth.router import router as auth_router
 from src.roadmap.router import router as roadmap_router
 from database import Base, engine
 from src.auth.models import KakaoUser
+from dotenv import load_dotenv
+import logging
 
+# 로깅 설정
+logging.basicConfig(
+    level=logging.DEBUG,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+
+load_dotenv()
 app = FastAPI()
 
 # CORS 설정

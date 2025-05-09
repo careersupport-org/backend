@@ -2,11 +2,10 @@ from datetime import datetime, timedelta, UTC
 from typing import Optional
 import jwt
 import os
-from dotenv import load_dotenv
 from .exceptions import TokenExpiredError, InvalidTokenError, TokenDecodeError
 from .dtos import UserDTO
 
-load_dotenv(".env")
+
 
 # 기본값 설정
 SECRET_KEY = os.getenv("JWT_SECRET_KEY")
