@@ -1,12 +1,55 @@
 from fastapi import APIRouter, HTTPException, Depends
 from sqlalchemy.orm import Session
 from database import get_db
-from .schemas import RoadmapCreateRequest, RoadmapResponse, RoadmapListResponse, ErrorResponse
+from .schemas import RoadmapCreateRequest, RoadmapResponse, RoadmapListResponse, RoadmapDetail, ErrorResponse
 from .service import RoadmapService
 from src.auth.router import get_current_user_from_token
 from src.auth.dtos import UserDTO
 
 router = APIRouter(prefix="/roadmap", tags=["roadmap"])
+
+@router.get("/{roadmap_uid}", response_model=RoadmapDetail, responses={
+    401: {"model": ErrorResponse, "description": "인증 오류"},
+    404: {"model": ErrorResponse, "description": "로드맵을 찾을 수 없음"},
+    500: {"model": ErrorResponse, "description": "서버 오류"}
+})
+async def get_roadmap(
+    roadmap_uid: str,
+    current_user: UserDTO = Depends(get_current_user_from_token),
+    db: Session = Depends(get_db)
+):
+    """로드맵 상세 정보를 조회합니다.
+    
+    Args:
+        roadmap_uid (str): 로드맵 UID
+        current_user (UserDTO): 현재 인증된 사용자 정보
+        db (Session): 데이터베이스 세션
+        
+    Returns:
+        RoadmapDetail: 로드맵 상세 정보
+        
+    Raises:
+        HTTPException: 인증되지 않은 경우, 로드맵을 찾을 수 없는 경우 또는 서버 오류 발생 시
+    """
+    try:
+        roadmap = RoadmapService.get_roadmap_by_uid(db, roadmap_uid)
+        return roadmap
+    except Exception as e:
+        if str(e) == "Roadmap not found":
+            raise HTTPException(
+                status_code=404,
+                detail=ErrorResponse(
+                    code="404",
+                    detail="로드맵을 찾을 수 없습니다."
+                ).dict()
+            )
+        raise HTTPException(
+            status_code=500,
+            detail=ErrorResponse(
+                code="500",
+                detail=f"서버 오류: {str(e)}"
+            ).dict()
+        )
 
 @router.get("", response_model=RoadmapListResponse, responses={
     401: {"model": ErrorResponse, "description": "인증 오류"},

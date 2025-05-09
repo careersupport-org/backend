@@ -7,12 +7,50 @@ import nanoid
 import logging
 import sys
 import traceback
-from .schemas import RoadmapListItem
+from .schemas import RoadmapListItem, RoadmapDetail, RoadmapStep
 
 
 class RoadmapService:
     roadmap_create_chain = LLMConfig.get_roadmap_create_llm()
     logger = logging.getLogger(__name__)
+
+    @classmethod
+    def get_roadmap_by_uid(cls, db: Session, roadmap_uid: str) -> RoadmapDetail:
+        """로드맵 상세 정보를 조회합니다.
+        
+        Args:
+            db (Session): 데이터베이스 세션
+            roadmap_uid (str): 로드맵 UID
+            
+        Returns:
+            RoadmapDetail: 로드맵 상세 정보
+            
+        Raises:
+            Exception: 로드맵을 찾을 수 없는 경우
+        """
+        roadmap = db.query(Roadmap).filter(Roadmap.uid == roadmap_uid).first()
+        if not roadmap:
+            raise Exception("Roadmap not found")
+
+        steps = []
+        for step in roadmap.steps:
+            step_detail = RoadmapStep(
+                id=step.uid,
+                step=step.step,
+                title=step.title,
+                tags=[tag.name for tag in step.tags],
+                subRoadMapId=None,  # 현재는 null로 설정
+                isBookmarked=step.is_bookmarked
+            )
+            steps.append(step_detail)
+
+        return RoadmapDetail(
+            id=roadmap.uid,
+            title=roadmap.title,
+            steps=steps,
+            createdAt=roadmap.created_at,
+            updatedAt=roadmap.updated_at
+        )
 
     @classmethod
     def get_user_roadmaps(cls, db: Session, user_uid: str) -> list[RoadmapListItem]:

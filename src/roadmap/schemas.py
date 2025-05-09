@@ -69,6 +69,55 @@ class RoadmapListResponse(BaseModel):
             }
         }
 
+class RoadmapStep(BaseModel):
+    """로드맵 단계 상세 정보"""
+    id: str = Field(description="단계 ID")
+    step: int = Field(description="단계 번호")
+    title: str = Field(description="단계 제목")
+    tags: List[str] = Field(description="태그 목록")
+    subRoadMapId: Optional[str] = Field(None, description="하위 로드맵 ID")
+    isBookmarked: bool = Field(False, description="북마크 여부")
+
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "id": "step123",
+                "step": 1,
+                "title": "Java 기본기 강화",
+                "tags": ["Java", "Basic"],
+                "subRoadMapId": None,
+                "isBookmarked": False
+            }
+        }
+
+class RoadmapDetail(BaseModel):
+    """로드맵 상세 정보"""
+    id: str = Field(description="로드맵 ID")
+    title: str = Field(description="로드맵 제목")
+    steps: List[RoadmapStep] = Field(description="로드맵 단계 목록")
+    createdAt: datetime = Field(description="생성일")
+    updatedAt: datetime = Field(description="수정일")
+
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "id": "roadmap123",
+                "title": "Java 백엔드 개발자 로드맵",
+                "steps": [
+                    {
+                        "id": "step123",
+                        "step": 1,
+                        "title": "Java 기본기 강화",
+                        "tags": ["Java", "Basic"],
+                        "subRoadMapId": None,
+                        "isBookmarked": False
+                    }
+                ],
+                "createdAt": "2024-03-20T10:00:00",
+                "updatedAt": "2024-03-20T10:00:00"
+            }
+        }
+
 class ErrorResponse(BaseModel):
     """에러 응답"""
     code: str = Field(description="에러 코드")
