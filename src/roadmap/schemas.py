@@ -1,6 +1,6 @@
 from pydantic import BaseModel, Field
 from datetime import datetime
-from typing import Optional, List
+from typing import Optional, List, Literal
 
 class RoadmapCreateRequest(BaseModel):
     """로드맵 생성 요청"""
@@ -34,7 +34,7 @@ class RoadmapResponse(BaseModel):
             }
         }
 
-class RoadmapListItem(BaseModel):
+class RoadmapListItemSchema(BaseModel):
     """로드맵 목록 아이템"""
     uid: str = Field(description="로드맵 UID")
     title: str = Field(description="로드맵 제목")
@@ -53,7 +53,7 @@ class RoadmapListItem(BaseModel):
 
 class RoadmapListResponse(BaseModel):
     """로드맵 목록 응답"""
-    roadmaps: List[RoadmapListItem] = Field(description="로드맵 목록")
+    roadmaps: List[RoadmapListItemSchema] = Field(description="로드맵 목록")
 
     class Config:
         json_schema_extra = {
@@ -69,7 +69,7 @@ class RoadmapListResponse(BaseModel):
             }
         }
 
-class RoadmapStep(BaseModel):
+class RoadmapStepSchema(BaseModel):
     """로드맵 단계 상세 정보"""
     id: str = Field(description="단계 ID")
     step: int = Field(description="단계 번호")
@@ -84,19 +84,19 @@ class RoadmapStep(BaseModel):
             "example": {
                 "id": "step123",
                 "step": 1,
-                "description": "Java 기본기 강화에 대한 상세설명..",
                 "title": "Java 기본기 강화",
+                "description": "Java 기본기 강화에 대한 상세설명..",
                 "tags": ["Java", "Basic"],
                 "subRoadMapId": None,
                 "isBookmarked": False
             }
         }
 
-class RoadmapDetail(BaseModel):
+class RoadmapDetailSchema(BaseModel):
     """로드맵 상세 정보"""
     id: str = Field(description="로드맵 ID")
     title: str = Field(description="로드맵 제목")
-    steps: List[RoadmapStep] = Field(description="로드맵 단계 목록")
+    steps: List[RoadmapStepSchema] = Field(description="로드맵 단계 목록")
     createdAt: datetime = Field(description="생성일")
     updatedAt: datetime = Field(description="수정일")
 
@@ -110,6 +110,7 @@ class RoadmapDetail(BaseModel):
                         "id": "step123",
                         "step": 1,
                         "title": "Java 기본기 강화",
+                        "description": "Java 기본기 강화에 대한 상세설명..",
                         "tags": ["Java", "Basic"],
                         "subRoadMapId": None,
                         "isBookmarked": False
@@ -117,6 +118,37 @@ class RoadmapDetail(BaseModel):
                 ],
                 "createdAt": "2024-03-20T10:00:00",
                 "updatedAt": "2024-03-20T10:00:00"
+            }
+        }
+
+class LearningResourceSchema(BaseModel):
+    """학습 리소스"""
+    url: str = Field(description="리소스 URL")
+    resource_type: Literal["official_documentation", "book", "online_video_course", "paper", "article"] = Field(
+        description="리소스 타입"
+    )
+
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "url": "https://docs.oracle.com/javase/tutorial/",
+                "resource_type": "official_documentation"
+            }
+        }
+
+class LearningResourceResponse(BaseModel):
+    """학습 리소스 응답"""
+    resources: List[LearningResourceSchema] = Field(description="학습 리소스 목록")
+
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "resources": [
+                    {
+                        "url": "https://docs.oracle.com/javase/tutorial/",
+                        "resource_type": "official_documentation"
+                    }
+                ]
             }
         }
 

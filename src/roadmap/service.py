@@ -1,5 +1,5 @@
 from sqlalchemy.orm import Session
-from .models import Roadmap, RoadmapStep, Tag
+from .models import Roadmap, RoadmapStep as RoadmapStepModel, Tag
 from .config import LLMConfig
 from src.auth.service import UserService
 from datetime import datetime
@@ -7,15 +7,59 @@ import nanoid
 import logging
 import sys
 import traceback
-from .schemas import RoadmapListItem, RoadmapDetail, RoadmapStep
+from .schemas import RoadmapListItemSchema, RoadmapDetailSchema, RoadmapStepSchema as RoadmapStepSchema, LearningResourceResponse, LearningResourceSchema
 
 
 class RoadmapService:
     roadmap_create_chain = LLMConfig.get_roadmap_create_llm()
+    recommend_resource_chain = LLMConfig.get_recommend_resource_llm()
     logger = logging.getLogger(__name__)
 
     @classmethod
-    def get_roadmap_by_uid(cls, db: Session, roadmap_uid: str) -> RoadmapDetail:
+    async def recommend_learning_resources(cls, db: Session, step_uid: str) -> LearningResourceResponse:
+        """로드맵 단계에 대한 학습 리소스를 추천합니다.
+        
+        Args:
+            db (Session): 데이터베이스 세션
+            step_uid (str): 로드맵 단계 UID
+            
+        Returns:
+            LearningResourceResponse: 추천된 학습 리소스 목록
+            
+        Raises:
+            Exception: 로드맵 단계를 찾을 수 없는 경우
+        """
+        step = db.query(RoadmapStepModel).filter(RoadmapStepModel.uid == step_uid).first()
+        if not step:
+            raise Exception("Roadmap step not found")
+
+        try:
+            # LLM을 통해 학습 리소스 추천
+            result = await cls.recommend_resource_chain.ainvoke({
+                "description": step.title,
+                "tags": " ,".join([tag.name for tag in step.tags]),
+                "language": "korean"
+            })
+
+            # 결과를 LearningResourceResponse 형식으로 변환
+            resources = [
+                LearningResourceSchema(
+                    url=resource["url"],
+                    resource_type=resource["resource_type"]
+                )
+                for resource in result["learning_resources"]
+            ]
+
+            return LearningResourceResponse(resources=resources)
+        except Exception as e:
+            error_msg = f"Error in recommend_learning_resources: {str(e)}\n"
+            error_msg += f"Error type: {type(e).__name__}\n"
+            error_msg += f"Traceback:\n{traceback.format_exc()}"
+            cls.logger.error(error_msg)
+            raise e
+
+    @classmethod
+    def get_roadmap_by_uid(cls, db: Session, roadmap_uid: str) -> RoadmapDetailSchema:
         """로드맵 상세 정보를 조회합니다.
         
         Args:
@@ -34,7 +78,7 @@ class RoadmapService:
 
         steps = []
         for step in roadmap.steps:
-            step_detail = RoadmapStep(
+            step_detail = RoadmapStepSchema(
                 id=step.uid,
                 step=step.step,
                 title=step.title,
@@ -45,7 +89,7 @@ class RoadmapService:
             )
             steps.append(step_detail)
 
-        return RoadmapDetail(
+        return RoadmapDetailSchema(
             id=roadmap.uid,
             title=roadmap.title,
             steps=steps,
@@ -54,7 +98,7 @@ class RoadmapService:
         )
 
     @classmethod
-    def get_user_roadmaps(cls, db: Session, user_uid: str) -> list[RoadmapListItem]:
+    def get_user_roadmaps(cls, db: Session, user_uid: str) -> list[RoadmapListItemSchema]:
         """사용자의 로드맵 목록을 조회합니다.
         
         Args:
@@ -68,7 +112,7 @@ class RoadmapService:
         roadmaps = db.query(Roadmap).filter(Roadmap.user_id == user.id).order_by(Roadmap.created_at.desc()).all()
         
         return [
-            RoadmapListItem(
+            RoadmapListItemSchema(
                 uid=roadmap.uid,
                 title=roadmap.title,
                 created_at=roadmap.created_at,
@@ -113,7 +157,7 @@ class RoadmapService:
 
             # RoadmapStep 생성
             for step_data in roadmap_result['steps']:
-                step = RoadmapStep(
+                step = RoadmapStepModel(
                     uid=nanoid.generate(size=10),
                     roadmap_id=roadmap.id,
                     step=step_data['step'],

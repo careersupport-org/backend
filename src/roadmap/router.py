@@ -1,14 +1,60 @@
 from fastapi import APIRouter, HTTPException, Depends
 from sqlalchemy.orm import Session
 from database import get_db
-from .schemas import RoadmapCreateRequest, RoadmapResponse, RoadmapListResponse, RoadmapDetail, ErrorResponse
+from .schemas import (
+    RoadmapCreateRequest, RoadmapResponse, RoadmapListResponse,
+    RoadmapDetailSchema, LearningResourceResponse, ErrorResponse
+)
 from .service import RoadmapService
 from src.auth.router import get_current_user_from_token
 from src.auth.dtos import UserDTO
 
 router = APIRouter(prefix="/roadmap", tags=["roadmap"])
 
-@router.get("/{roadmap_uid}", response_model=RoadmapDetail, responses={
+@router.get("/step/{step_uid}/resources", response_model=LearningResourceResponse, responses={
+    401: {"model": ErrorResponse, "description": "인증 오류"},
+    404: {"model": ErrorResponse, "description": "로드맵 단계를 찾을 수 없음"},
+    500: {"model": ErrorResponse, "description": "서버 오류"}
+})
+async def get_learning_resources(
+    step_uid: str,
+    current_user: UserDTO = Depends(get_current_user_from_token),
+    db: Session = Depends(get_db)
+):
+    """로드맵 단계에 대한 학습 리소스를 추천합니다.
+    
+    Args:
+        step_uid (str): 로드맵 단계 UID
+        current_user (UserDTO): 현재 인증된 사용자 정보
+        db (Session): 데이터베이스 세션
+        
+    Returns:
+        LearningResourceResponse: 추천된 학습 리소스 목록
+        
+    Raises:
+        HTTPException: 인증되지 않은 경우, 로드맵 단계를 찾을 수 없는 경우 또는 서버 오류 발생 시
+    """
+    try:
+        resources = await RoadmapService.recommend_learning_resources(db, step_uid)
+        return resources
+    except Exception as e:
+        if str(e) == "Roadmap step not found":
+            raise HTTPException(
+                status_code=404,
+                detail=ErrorResponse(
+                    code="404",
+                    detail="로드맵 단계를 찾을 수 없습니다."
+                ).dict()
+            )
+        raise HTTPException(
+            status_code=500,
+            detail=ErrorResponse(
+                code="500",
+                detail=f"서버 오류: {str(e)}"
+            ).dict()
+        )
+
+@router.get("/{roadmap_uid}", response_model=RoadmapDetailSchema, responses={
     401: {"model": ErrorResponse, "description": "인증 오류"},
     404: {"model": ErrorResponse, "description": "로드맵을 찾을 수 없음"},
     500: {"model": ErrorResponse, "description": "서버 오류"}
