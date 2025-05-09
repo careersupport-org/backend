@@ -38,6 +38,7 @@ class RoadmapService:
                 id=step.uid,
                 step=step.step,
                 title=step.title,
+                description=step.description,
                 tags=[tag.name for tag in step.tags],
                 subRoadMapId=None,  # 현재는 null로 설정
                 isBookmarked=step.is_bookmarked

@@ -74,6 +74,7 @@ class RoadmapStep(BaseModel):
     id: str = Field(description="단계 ID")
     step: int = Field(description="단계 번호")
     title: str = Field(description="단계 제목")
+    description: str = Field(description="단계 설명")
     tags: List[str] = Field(description="태그 목록")
     subRoadMapId: Optional[str] = Field(None, description="하위 로드맵 ID")
     isBookmarked: bool = Field(False, description="북마크 여부")
@@ -83,6 +84,7 @@ class RoadmapStep(BaseModel):
             "example": {
                 "id": "step123",
                 "step": 1,
+                "description": "Java 기본기 강화에 대한 상세설명..",
                 "title": "Java 기본기 강화",
                 "tags": ["Java", "Basic"],
                 "subRoadMapId": None,
