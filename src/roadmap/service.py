@@ -7,12 +7,36 @@ import nanoid
 import logging
 import sys
 import traceback
+from .schemas import RoadmapListItem
 
 
 class RoadmapService:
     roadmap_create_chain = LLMConfig.get_roadmap_create_llm()
     logger = logging.getLogger(__name__)
 
+    @classmethod
+    def get_user_roadmaps(cls, db: Session, user_uid: str) -> list[RoadmapListItem]:
+        """사용자의 로드맵 목록을 조회합니다.
+        
+        Args:
+            db (Session): 데이터베이스 세션
+            user_uid (str): 사용자 UID
+            
+        Returns:
+            list[RoadmapListItem]: 로드맵 목록
+        """
+        user = UserService.find_user(db, user_uid)
+        roadmaps = db.query(Roadmap).filter(Roadmap.user_id == user.id).order_by(Roadmap.created_at.desc()).all()
+        
+        return [
+            RoadmapListItem(
+                uid=roadmap.uid,
+                title=roadmap.title,
+                created_at=roadmap.created_at,
+                updated_at=roadmap.updated_at
+            )
+            for roadmap in roadmaps
+        ]
 
     @classmethod
     async def create_roadmap(cls, db: Session, user_uid: str, target_job: str, instruct: str) -> str:

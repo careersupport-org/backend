@@ -1,6 +1,6 @@
 from pydantic import BaseModel, Field
 from datetime import datetime
-from typing import Optional
+from typing import Optional, List
 
 class RoadmapCreateRequest(BaseModel):
     """로드맵 생성 요청"""
@@ -31,6 +31,41 @@ class RoadmapResponse(BaseModel):
         json_schema_extra = {
             "example": {
                 "id": "testroadmap123",
+            }
+        }
+
+class RoadmapListItem(BaseModel):
+    """로드맵 목록 아이템"""
+    uid: str = Field(description="로드맵 UID")
+    title: str = Field(description="로드맵 제목")
+    created_at: datetime = Field(description="생성일")
+    updated_at: datetime = Field(description="수정일")
+
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "uid": "testroadmap123",
+                "title": "Java 백엔드 개발자 로드맵",
+                "created_at": "2024-03-20T10:00:00",
+                "updated_at": "2024-03-20T10:00:00"
+            }
+        }
+
+class RoadmapListResponse(BaseModel):
+    """로드맵 목록 응답"""
+    roadmaps: List[RoadmapListItem] = Field(description="로드맵 목록")
+
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "roadmaps": [
+                    {
+                        "uid": "testroadmap123",
+                        "title": "Java 백엔드 개발자 로드맵",
+                        "created_at": "2024-03-20T10:00:00",
+                        "updated_at": "2024-03-20T10:00:00"
+                    }
+                ]
             }
         }
 

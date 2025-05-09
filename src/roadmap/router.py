@@ -1,12 +1,44 @@
 from fastapi import APIRouter, HTTPException, Depends
 from sqlalchemy.orm import Session
 from database import get_db
-from .schemas import RoadmapCreateRequest, RoadmapResponse, ErrorResponse
+from .schemas import RoadmapCreateRequest, RoadmapResponse, RoadmapListResponse, ErrorResponse
 from .service import RoadmapService
 from src.auth.router import get_current_user_from_token
 from src.auth.dtos import UserDTO
 
 router = APIRouter(prefix="/roadmap", tags=["roadmap"])
+
+@router.get("", response_model=RoadmapListResponse, responses={
+    401: {"model": ErrorResponse, "description": "인증 오류"},
+    500: {"model": ErrorResponse, "description": "서버 오류"}
+})
+async def get_roadmaps(
+    current_user: UserDTO = Depends(get_current_user_from_token),
+    db: Session = Depends(get_db)
+):
+    """사용자의 로드맵 목록을 조회합니다.
+    
+    Args:
+        current_user (UserDTO): 현재 인증된 사용자 정보
+        db (Session): 데이터베이스 세션
+        
+    Returns:
+        RoadmapListResponse: 로드맵 목록
+        
+    Raises:
+        HTTPException: 인증되지 않은 경우 또는 서버 오류 발생 시
+    """
+    try:
+        roadmaps = RoadmapService.get_user_roadmaps(db, current_user.uid)
+        return RoadmapListResponse(roadmaps=roadmaps)
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=ErrorResponse(
+                code="500",
+                detail=f"서버 오류: {str(e)}"
+            ).dict()
+        )
 
 @router.post("", response_model=RoadmapResponse, responses={
     401: {"model": ErrorResponse, "description": "인증 오류"},
