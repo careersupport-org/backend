@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from src.auth.router import router as auth_router
+from src.roadmap.router import router as roadmap_router
 from database import Base, engine
 from src.auth.models import KakaoUser
 
@@ -24,3 +25,4 @@ app.add_middleware(
 Base.metadata.create_all(bind=engine)
 
 app.include_router(auth_router)
+app.include_router(roadmap_router)

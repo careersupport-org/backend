@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 from database import get_db
 from .schemas import RoadmapCreateRequest, RoadmapResponse, ErrorResponse
 from .service import RoadmapService
-from src.auth.utils import get_current_user_from_token
+from src.auth.router import get_current_user_from_token
 from src.auth.dtos import UserDTO
 
 router = APIRouter(prefix="/roadmap", tags=["roadmap"])

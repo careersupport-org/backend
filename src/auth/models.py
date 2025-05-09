@@ -1,5 +1,6 @@
 from sqlalchemy import Column, Integer, String, DateTime, BigInteger
 from sqlalchemy.sql import func
+from sqlalchemy.orm import relationship
 from database import Base
 
 class KakaoUser(Base):
@@ -13,6 +14,9 @@ class KakaoUser(Base):
     profile = Column(String(500), nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     last_logined_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
+
+    # 관계 설정
+    roadmaps = relationship("Roadmap", back_populates="user")
 
     def __repr__(self):
         return f"<KakaoUser(id={self.id}, kakao_id={self.kakao_id}, nickname={self.nickname})>"
