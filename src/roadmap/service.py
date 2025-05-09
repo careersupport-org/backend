@@ -2,6 +2,7 @@ from sqlalchemy.orm import Session, joinedload
 from .models import Roadmap, RoadmapStep as RoadmapStepModel, Tag
 from .config import LLMConfig
 from src.auth.service import UserService
+from src.auth.models import KakaoUser
 from datetime import datetime
 import nanoid
 import logging
@@ -9,7 +10,8 @@ import sys
 import traceback
 from .schemas import (
     RoadmapListItemSchema, RoadmapDetailSchema, RoadmapStepSchema,
-    LearningResourceResponse, LearningResourceSchema
+    LearningResourceResponse, LearningResourceSchema, BookmarkedStepListResponse,
+    BookmarkedStep
 )
 from fastapi.responses import StreamingResponse
 import json
@@ -245,4 +247,88 @@ class RoadmapService:
             error_msg += f"Traceback:\n{traceback.format_exc()}"
             cls.logger.error(error_msg)
             raise e
+
+    @classmethod
+    def toggle_bookmark(cls, db: Session, step_uid: str, current_user_uid: str) -> bool:
+        """로드맵 단계의 북마크 상태를 토글합니다.
+        
+        Args:
+            db (Session): 데이터베이스 세션
+            step_uid (str): 로드맵 단계 UID
+            current_user_uid (str): 현재 접근한 사용자의 UID
+            
+        Returns:
+            bool: 토글 후 북마크 상태 (True/False)
+            
+        Raises:
+            Exception: 로드맵 단계를 찾을 수 없는 경우
+            Exception: 권한이 없는 경우
+        """
+        # 로드맵 단계와 관련된 로드맵 정보를 함께 조회
+        step = db.query(RoadmapStepModel).join(
+            RoadmapStepModel.roadmap
+        ).filter(RoadmapStepModel.uid == step_uid).first()
+        
+        if not step:
+            raise Exception("Roadmap step not found")
+
+        # 로드맵 생성자 확인
+        roadmap_creator = UserService.find_user(db, step.roadmap.user.uid)
+        if roadmap_creator.uid != current_user_uid:
+            raise Exception("Permission denied")
+
+        try:
+            # 북마크 상태 토글
+            step.is_bookmarked = not step.is_bookmarked
+            db.commit()
+            return step.is_bookmarked
+        except Exception as e:
+            db.rollback()
+            error_msg = f"Error in toggle_bookmark: {str(e)}\n"
+            error_msg += f"Error type: {type(e).__name__}\n"
+            error_msg += f"Traceback:\n{traceback.format_exc()}"
+            cls.logger.error(error_msg)
+            raise e
+
+    @classmethod
+    def get_bookmarked_steps(cls, db: Session, user_uid: str) -> BookmarkedStepListResponse:
+        """사용자의 북마크된 Step 목록을 조회합니다.
+        
+        Args:
+            db (Session): 데이터베이스 세션
+            user_uid (str): 사용자 UID
+            
+        Returns:
+            BookmarkedStepListResponse: 북마크된 Step 목록
+        """
+        try:
+            # 사용자의 로드맵에서 북마크된 Step 조회
+            bookmarked_steps = db.query(RoadmapStepModel).join(
+                RoadmapStepModel.roadmap
+            ).join(
+                KakaoUser,
+                Roadmap.user_id == KakaoUser.id
+            ).filter(
+                RoadmapStepModel.is_bookmarked == True,
+                KakaoUser.uid == user_uid
+            ).all()
+
+            # 응답 형식으로 변환
+            steps = [
+                BookmarkedStep(
+                    roadmap_uid=step.roadmap.uid,
+                    step_uid=step.uid
+                )
+                for step in bookmarked_steps
+            ]
+
+            # 북마크된 Step이 없는 경우에도 빈 리스트 반환
+            return BookmarkedStepListResponse(steps=steps)
+        except Exception as e:
+            error_msg = f"Error in get_bookmarked_steps: {str(e)}\n"
+            error_msg += f"Error type: {type(e).__name__}\n"
+            error_msg += f"Traceback:\n{traceback.format_exc()}"
+            cls.logger.error(error_msg)
+            # 북마크된 Step이 없는 경우에도 빈 리스트 반환
+            return BookmarkedStepListResponse(steps=[])
         

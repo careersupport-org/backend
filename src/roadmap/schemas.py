@@ -164,3 +164,32 @@ class ErrorResponse(BaseModel):
                 "detail": "잘못된 요청입니다."
             }
         }
+
+class BookmarkedStep(BaseModel):
+    """북마크된 Step 정보"""
+    roadmap_uid: str = Field(description="로드맵 UID")
+    step_uid: str = Field(description="Step UID")
+
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "roadmap_uid": "roadmap123",
+                "step_uid": "step123"
+            }
+        }
+
+class BookmarkedStepListResponse(BaseModel):
+    """북마크된 Step 목록 응답"""
+    steps: List[BookmarkedStep] = Field(description="북마크된 Step 목록")
+
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "steps": [
+                    {
+                        "roadmap_uid": "roadmap123",
+                        "step_uid": "step123"
+                    }
+                ]
+            }
+        }
