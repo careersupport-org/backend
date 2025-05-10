@@ -15,7 +15,7 @@ class LLMConfig:
     recommend_resource_llm = None
     step_guide_llm = None
     roadmap_assistant_llm = None
-
+    subroadmap_create_llm = None
     @classmethod
     def get_roadmap_create_llm(cls):
         if cls.roadmap_create_llm is not None:
@@ -115,3 +115,36 @@ class LLMConfig:
 
         cls.roadmap_assistant_llm = chain
         return cls.roadmap_assistant_llm
+
+
+    @classmethod
+    def get_subroadmap_create_llm(cls):
+        if cls.subroadmap_create_llm is not None:
+            return cls.subroadmap_create_llm
+        
+        llm = ChatOpenAI(
+            model = model_name,
+            temperature=0.7,
+            base_url=api_base,
+            api_key=api_key,
+            max_completion_tokens=4096
+        )
+        
+        prompt = load_prompt("prompts/subroadmap_create_prompt.json")
+
+        subroadmap_parser = JsonOutputParser(pydantic_object=RoadMap)
+
+        def get_format_instructions(_):
+            return subroadmap_parser.get_format_instructions()
+        
+        chain = (
+            RunnablePassthrough.assign(
+            format_instructions=get_format_instructions
+            ) 
+            | prompt 
+            | llm 
+            | subroadmap_parser
+        )
+
+        cls.subroadmap_create_llm = chain
+        return cls.subroadmap_create_llm

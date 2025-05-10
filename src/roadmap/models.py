@@ -24,7 +24,8 @@ class Roadmap(Base):
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
     
     # 관계 설정
-    steps = relationship("RoadmapStep", back_populates="roadmap", cascade="all, delete-orphan")
+    steps = relationship("RoadmapStep", back_populates="roadmap", cascade="all, delete-orphan", foreign_keys="RoadmapStep.roadmap_id")
+    parent_steps = relationship("RoadmapStep", back_populates="sub_roadmap", foreign_keys="RoadmapStep.sub_roadmap_uid")
     user = relationship("KakaoUser", back_populates="roadmaps")
 
     def __repr__(self):
@@ -42,9 +43,11 @@ class RoadmapStep(Base):
     description = Column(String(1000), nullable=False)
     guide = Column(String(2048), nullable=True)
     is_bookmarked = Column(Boolean, default=False, nullable=False)
-
+    sub_roadmap_uid = Column(String(10), ForeignKey('roadmaps.uid'), nullable=True)
+    
     # 관계 설정
-    roadmap = relationship("Roadmap", back_populates="steps")
+    roadmap = relationship("Roadmap", back_populates="steps", foreign_keys=[roadmap_id])
+    sub_roadmap = relationship("Roadmap", back_populates="parent_steps", foreign_keys=[sub_roadmap_uid])
     tags = relationship("Tag", secondary=roadmap_step_tags, back_populates="steps")
 
     def __repr__(self):

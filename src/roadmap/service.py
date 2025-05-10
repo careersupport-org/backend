@@ -22,6 +22,8 @@ class RoadmapService:
     recommend_resource_chain = LLMConfig.get_recommend_resource_llm()
     step_guide_chain = LLMConfig.get_step_guide_llm()
     roadmap_assistant_chain = LLMConfig.get_roadmap_assistant_llm()
+    subroadmap_create_chain = LLMConfig.get_subroadmap_create_llm()
+    
     logger = logging.getLogger(__name__)
 
     @classmethod
@@ -93,7 +95,7 @@ class RoadmapService:
                 title=step.title,
                 description=step.description,
                 tags=[tag.name for tag in step.tags],
-                subRoadMapId=None,  # 현재는 null로 설정
+                subRoadMapId=step.sub_roadmap_uid,
                 isBookmarked=step.is_bookmarked
             )
             steps.append(step_detail)
@@ -167,7 +169,7 @@ class RoadmapService:
             for step_data in roadmap_result['steps']:
                 step = RoadmapStepModel(
                     uid=nanoid.generate(size=10),
-                    roadmap_id=roadmap.id,
+                    roadmap_id=roadmap.id,  # flush 후 roadmap.id 사용
                     step=step_data['step'],
                     title=step_data['title'],
                     description=step_data['description']
@@ -197,9 +199,9 @@ class RoadmapService:
 
     @classmethod
     async def get_step_guide(cls, db: Session, step_uid: str) -> StreamingResponse:
-        step = db.query(RoadmapStepModel).options(
-            joinedload(RoadmapStepModel.tags)
-        ).filter(RoadmapStepModel.uid == step_uid).first()
+        step = db.query(RoadmapStepModel).filter(RoadmapStepModel.uid == step_uid).options(
+            joinedload(RoadmapStepModel.roadmap)
+        ).first()
         
         if not step:
             raise Exception("Roadmap step not found")
@@ -304,9 +306,9 @@ class RoadmapService:
             Exception: 권한이 없는 경우
         """
         # 로드맵 단계와 관련된 로드맵 정보를 함께 조회
-        step = db.query(RoadmapStepModel).join(
-            RoadmapStepModel.roadmap
-        ).filter(RoadmapStepModel.uid == step_uid).first()
+        step = db.query(RoadmapStepModel).filter(RoadmapStepModel.uid == step_uid).options(
+            joinedload(RoadmapStepModel.roadmap)
+        ).first()
         
         if not step:
             raise Exception("Roadmap step not found")
@@ -411,3 +413,59 @@ class RoadmapService:
         except Exception as e:
             cls.logger.error(f"Error in call_roadmap_assistant: {str(e)}")
             raise e
+
+
+    @classmethod
+    async def create_subroadmap(cls, db: Session, step_uid: str) -> str:
+        """서브 로드맵을 생성합니다.
+        
+        Args:
+            db (Session): 데이터베이스 세션
+            step_uid (str): 로드맵 단계 UID
+            
+        Returns:
+            str: 생성된 서브 로드맵 UID
+        """
+        step = db.query(RoadmapStepModel).filter(RoadmapStepModel.uid == step_uid).options(
+            joinedload(RoadmapStepModel.roadmap)
+        ).first()
+
+        if not step:
+            raise Exception("Roadmap step not found")
+        
+        roadmap = step.roadmap
+        
+        subroadmap_result = await cls.subroadmap_create_chain.ainvoke({
+            "current_date": datetime.now().strftime("%Y-%m-%d"),
+            "language": "korean",
+            "topic_description": step.description,
+            "topic_tags": ", ".join([tag.name for tag in step.tags]),
+            "target_job": roadmap.title,
+        })
+        
+        subroadmap = Roadmap(
+            uid=nanoid.generate(size=10),
+            user_id=roadmap.user_id,
+            title=subroadmap_result['title']
+        )
+        db.add(subroadmap)
+        db.commit()
+
+        for step_data in subroadmap_result['steps']:
+            step = RoadmapStepModel(
+                uid=nanoid.generate(size=10),
+                roadmap_id=subroadmap.id,
+                step=step_data['step'],
+                title=step_data['title'],
+                description=step_data['description'],
+                tags=[Tag(uid=nanoid.generate(size=10), name=tag) for tag in step_data['tags']]
+            )
+            db.add(step)
+
+        db.query(RoadmapStepModel).filter(RoadmapStepModel.uid == step_uid).update(
+            {"sub_roadmap_uid": subroadmap.uid}
+        )
+        cls.logger.info(f"Subroadmap created and linked: {subroadmap.uid}")
+        db.commit()
+
+        return subroadmap.uid

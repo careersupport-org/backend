@@ -348,3 +348,47 @@ async def call_roadmap_assistant(
             raise e
         logger.error(f"Error in call_roadmap_assistant: {str(e)}")
         raise HTTPException(status_code=500, detail="서버 오류가 발생했습니다.")
+
+@router.post("/step/{step_uid}/subroadmap", responses={
+    200: {"description": "서브 로드맵 생성 성공"},
+    401: {"model": ErrorResponse, "description": "인증 오류"},
+    404: {"model": ErrorResponse, "description": "로드맵 단계를 찾을 수 없음"},
+    500: {"model": ErrorResponse, "description": "서버 오류"}
+})
+async def create_subroadmap(
+    step_uid: str,
+    current_user: UserDTO = Depends(get_current_user_from_token),
+    db: Session = Depends(get_db)
+) -> dict:
+    """로드맵 단계에 대한 서브 로드맵을 생성합니다.
+    
+    Args:
+        step_uid (str): 로드맵 단계 UID
+        current_user (UserDTO): 현재 인증된 사용자 정보
+        db (Session): 데이터베이스 세션
+        
+    Returns:
+        dict: 생성된 서브 로드맵 UID
+        
+    Raises:
+        HTTPException: 인증되지 않은 경우, 로드맵 단계를 찾을 수 없는 경우 또는 서버 오류 발생 시
+    """
+    try:
+        subroadmap_uid = await RoadmapService.create_subroadmap(db, step_uid)
+        return {"subroadmap_uid": subroadmap_uid}
+    except Exception as e:
+        if str(e) == "Roadmap step not found":
+            raise HTTPException(
+                status_code=404,
+                detail=ErrorResponse(
+                    code="404",
+                    detail="로드맵 단계를 찾을 수 없습니다."
+                ).dict()
+            )
+        raise HTTPException(
+            status_code=500,
+            detail=ErrorResponse(
+                code="500",
+                detail=f"서버 오류: {str(e)}"
+            ).dict()
+        )
