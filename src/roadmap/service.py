@@ -15,7 +15,7 @@ from .schemas import (
 )
 from fastapi.responses import StreamingResponse
 import json
-
+import asyncio
 
 class RoadmapService:
     roadmap_create_chain = LLMConfig.get_roadmap_create_llm()
@@ -197,19 +197,6 @@ class RoadmapService:
 
     @classmethod
     async def get_step_guide(cls, db: Session, step_uid: str) -> StreamingResponse:
-        """로드맵 단계에 대한 상세 가이드를 스트리밍합니다.
-        
-        Args:
-            db (Session): 데이터베이스 세션
-            step_uid (str): 로드맵 단계 UID
-            
-        Returns:
-            StreamingResponse: SSE 스트리밍 응답
-            
-        Raises:
-            Exception: 로드맵 단계를 찾을 수 없는 경우
-        """
-        # tags를 즉시 로딩하기 위해 joinedload 사용
         step = db.query(RoadmapStepModel).options(
             joinedload(RoadmapStepModel.tags)
         ).filter(RoadmapStepModel.uid == step_uid).first()
@@ -217,8 +204,27 @@ class RoadmapService:
         if not step:
             raise Exception("Roadmap step not found")
 
+        async def generate_guide_in_db():
+            for chunk in step.guide:
+                yield f"data: {json.dumps({'token': chunk})}\n\n"
+
+        if step.guide:
+            return StreamingResponse(
+                generate_guide_in_db(),
+                media_type="text/event-stream"
+            )
+
+        # 토큰을 저장할 공유 객체
+        collected_tokens = []
+        
+        # 스트리밍이 완료된 후 작업할 이벤트
+        streaming_completed = asyncio.Event()
+        
         try:
-            tokens = []
+            # 백그라운드 태스크 시작
+            save_task = asyncio.create_task(
+                cls._wait_and_save_guide(streaming_completed, collected_tokens, step_uid)
+            )
             
             async def generate():
                 try:
@@ -228,13 +234,16 @@ class RoadmapService:
                         "language": "korean"
                     }):
                         token = chunk.content
-                        tokens.append(token)
+                        collected_tokens.append(token)
                         yield f"data: {json.dumps({'token': token})}\n\n"
+                    
+                    # 스트리밍 완료 이벤트 설정
+                    streaming_completed.set()
+                    
                 except Exception as e:
-                    error_msg = f"Error in step guide streaming: {str(e)}\n"
-                    error_msg += f"Error type: {type(e).__name__}\n"
-                    error_msg += f"Traceback:\n{traceback.format_exc()}"
-                    cls.logger.error(error_msg)
+                    # 에러 발생 시에도 이벤트 설정하여 백그라운드 태스크가 종료되도록 함
+                    streaming_completed.set()
+                    cls.logger.error(f"Error in streaming: {str(e)}")
                     yield f"data: {json.dumps({'error': str(e)})}\n\n"
 
             return StreamingResponse(
@@ -242,11 +251,41 @@ class RoadmapService:
                 media_type="text/event-stream"
             )
         except Exception as e:
-            error_msg = f"Error in get_step_guide: {str(e)}\n"
-            error_msg += f"Error type: {type(e).__name__}\n"
-            error_msg += f"Traceback:\n{traceback.format_exc()}"
-            cls.logger.error(error_msg)
+            # 메인 함수에서 에러 발생 시 이벤트 설정
+            streaming_completed.set()
+            cls.logger.error(f"Error in get_step_guide: {str(e)}")
             raise e
+
+    @classmethod
+    async def _wait_and_save_guide(cls, completed_event, tokens, step_uid):
+        """스트리밍이 완료될 때까지 기다린 후 가이드를 저장하는 백그라운드 태스크"""
+        try:
+            # 스트리밍 완료 대기
+            await completed_event.wait()
+            
+            # 토큰 결합하여 전체 가이드 생성
+            complete_guide = "".join(tokens)
+            
+            # 새 DB 세션 생성 (기존 세션은 이미 닫혔을 수 있음)
+            from sqlalchemy.orm import sessionmaker
+            from database import engine
+            
+            SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+            db = SessionLocal()
+            
+            try:
+                step = db.query(RoadmapStepModel).filter(RoadmapStepModel.uid == step_uid).first()
+                if step:
+                    step.guide = complete_guide
+                    db.commit()
+                    cls.logger.info(f"Guide for step {step_uid} saved to DB")
+                else:
+                    cls.logger.error(f"Failed to save guide: Step {step_uid} not found")
+            finally:
+                db.close()
+        except Exception as e:
+            cls.logger.error(f"Error in background save task: {str(e)}")
+
 
     @classmethod
     def toggle_bookmark(cls, db: Session, step_uid: str, current_user_uid: str) -> bool:
