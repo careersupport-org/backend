@@ -142,7 +142,6 @@ class RoadmapService:
         Returns:
             Roadmap: 생성된 로드맵 정보
         """
-        print(f"create_roadmap 호출")
         current_date = datetime.now().strftime("%Y-%m-%d")
         user = UserService.find_user(db, user_uid)
         try:
