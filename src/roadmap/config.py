@@ -14,6 +14,7 @@ class LLMConfig:
     roadmap_create_llm = None
     recommend_resource_llm = None
     step_guide_llm = None
+    roadmap_assistant_llm = None
 
     @classmethod
     def get_roadmap_create_llm(cls):
@@ -95,3 +96,22 @@ class LLMConfig:
 
         cls.step_guide_llm = chain
         return cls.step_guide_llm
+
+    @classmethod
+    def get_roadmap_assistant_llm(cls):
+        if cls.roadmap_assistant_llm is not None:
+            return cls.roadmap_assistant_llm
+
+        llm = ChatOpenAI(
+            model = model_name,
+            temperature=0.7,
+            base_url=api_base,
+            api_key=api_key,
+            max_completion_tokens=2048
+        )
+
+        prompt = load_prompt("prompts/roadmap_assistant_prompt.json")
+        chain = prompt | llm
+
+        cls.roadmap_assistant_llm = chain
+        return cls.roadmap_assistant_llm

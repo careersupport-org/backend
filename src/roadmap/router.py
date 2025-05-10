@@ -1,17 +1,24 @@
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException, Depends, Request
 from sqlalchemy.orm import Session
 from database import get_db
 from .schemas import (
     RoadmapCreateRequest, RoadmapResponse, RoadmapListResponse,
     RoadmapDetailSchema, LearningResourceResponse, ErrorResponse,
-    BookmarkedStepListResponse
+    BookmarkedStepListResponse, BookmarkedStep
 )
 from .service import RoadmapService
 from src.auth.router import get_current_user_from_token
 from src.auth.dtos import UserDTO
 from fastapi.responses import StreamingResponse
+from src.auth.service import UserService
+from pydantic import BaseModel
+import logging
 
 router = APIRouter(prefix="/roadmap", tags=["roadmap"])
+logger = logging.getLogger(__name__)
+
+class UserInputRequest(BaseModel):
+    user_input: str
 
 @router.get("/bookmarks", response_model=BookmarkedStepListResponse, responses={
     401: {"model": ErrorResponse, "description": "인증 오류"},
@@ -303,3 +310,41 @@ async def toggle_bookmark(
                 detail=f"서버 오류: {str(e)}"
             ).dict()
         ) 
+    
+
+@router.post("/{roadmap_uid}/assistant", responses={
+    200: {"description": "로드맵 어시스턴트 응답"},
+    401: {"description": "인증 오류"},
+    404: {"description": "로드맵을 찾을 수 없음"},
+    500: {"description": "서버 오류"}
+})
+async def call_roadmap_assistant(
+    roadmap_uid: str,
+    request: UserInputRequest,
+    db: Session = Depends(get_db)
+):
+    """로드맵 어시스턴트를 호출합니다.
+    
+    Args:
+        roadmap_uid (str): 로드맵 UID
+        request (UserInputRequest): 사용자 입력
+        db (Session): 데이터베이스 세션
+        
+    Returns:
+        StreamingResponse: 로드맵 어시스턴트 응답
+        
+    Raises:
+        HTTPException: 로드맵을 찾을 수 없는 경우
+        HTTPException: 서버 오류가 발생한 경우
+    """
+    try:
+        return await RoadmapService.call_roadmap_assistant(
+            db=db,
+            roadmap_uid=roadmap_uid,
+            user_input=request.user_input
+        )
+    except Exception as e:
+        if isinstance(e, HTTPException):
+            raise e
+        logger.error(f"Error in call_roadmap_assistant: {str(e)}")
+        raise HTTPException(status_code=500, detail="서버 오류가 발생했습니다.")

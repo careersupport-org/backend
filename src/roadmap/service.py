@@ -21,6 +21,7 @@ class RoadmapService:
     roadmap_create_chain = LLMConfig.get_roadmap_create_llm()
     recommend_resource_chain = LLMConfig.get_recommend_resource_llm()
     step_guide_chain = LLMConfig.get_step_guide_llm()
+    roadmap_assistant_chain = LLMConfig.get_roadmap_assistant_llm()
     logger = logging.getLogger(__name__)
 
     @classmethod
@@ -370,3 +371,43 @@ class RoadmapService:
             # 북마크된 Step이 없는 경우에도 빈 리스트 반환
             return BookmarkedStepListResponse(steps=[])
         
+    @classmethod
+    async def call_roadmap_assistant(cls, db: Session, roadmap_uid: str, user_input: str) -> StreamingResponse:
+        """로드맵 어시스턴트를 호출합니다.
+        
+        Args:
+            db (Session): 데이터베이스 세션
+            roadmap_uid (str): 로드맵 UID
+            user_input (str): 사용자 입력
+        Returns:
+            StreamingResponse: 로드맵 어시스턴트 응답
+        """
+
+        roadmap = db.query(Roadmap).filter(Roadmap.uid == roadmap_uid).first()
+        if not roadmap:
+            raise Exception("Roadmap not found")
+
+        try:
+            # Roadmap 객체를 Pydantic 모델로 변환
+            roadmap_detail = cls.get_roadmap_by_uid(db, roadmap_uid)
+            roadmap_json = roadmap_detail.model_dump_json()
+
+            async def generate():
+                try:
+                    async for chunk in cls.roadmap_assistant_chain.astream({
+                        "language": "korean",
+                        "roadmap_object": roadmap_json,
+                        "user_input": user_input
+                    }):
+                        yield f"data: {json.dumps({'token': chunk.content})}\n\n"
+                except Exception as e:
+                    cls.logger.error(f"Error in call_roadmap_assistant: {str(e)}")
+                    yield f"data: {json.dumps({'error': str(e)})}\n\n"
+
+            return StreamingResponse(
+                generate(),
+                media_type="text/event-stream"
+            )
+        except Exception as e:
+            cls.logger.error(f"Error in call_roadmap_assistant: {str(e)}")
+            raise e
