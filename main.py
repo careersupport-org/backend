@@ -6,6 +6,7 @@ from database import Base, engine
 from src.auth.models import KakaoUser
 from dotenv import load_dotenv
 import logging
+import os
 
 # 로깅 설정
 logging.basicConfig(
@@ -31,7 +32,8 @@ app.add_middleware(
 )
 
 # 데이터베이스 초기화
-Base.metadata.create_all(bind=engine)
+if os.getenv("CREATE_DATABASE", "false") == "true":
+    Base.metadata.create_all(bind=engine)
 
 app.include_router(auth_router)
 app.include_router(roadmap_router)
