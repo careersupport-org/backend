@@ -19,8 +19,7 @@ class LLMConfig:
     def get_roadmap_create_llm(cls):
         if cls.roadmap_create_llm is not None:
             return cls.roadmap_create_llm
-        print(f"api_base: {api_base}")
-        print(f"api_key: {api_key}")
+
         llm = ChatOpenAI(
             model = model_name,
             temperature=0.7,
