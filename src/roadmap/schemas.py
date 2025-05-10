@@ -124,8 +124,8 @@ class RoadmapDetailSchema(BaseModel):
 class LearningResourceSchema(BaseModel):
     """학습 리소스"""
     url: str = Field(description="리소스 URL")
-    resource_type: Literal["official_documentation", "book", "online_video_course", "paper", "article"] = Field(
-        description="리소스 타입"
+    resource_type: str = Field(
+        description="official_documentation, book, online_video_course, paper, article, etc.."
     )
 
     class Config:
