@@ -120,7 +120,10 @@ class RoadmapService:
             list[RoadmapListItem]: 로드맵 목록
         """
         user = UserService.find_user(db, user_uid)
-        roadmaps = db.query(Roadmap).filter(Roadmap.user_id == user.id).order_by(Roadmap.created_at.desc()).all()
+        roadmaps = db.query(Roadmap).filter(
+            Roadmap.user_id == user.id,
+            Roadmap.is_subroadmap == False
+        ).order_by(Roadmap.created_at.desc()).all()
         
         return [
             RoadmapListItemSchema(
@@ -446,6 +449,7 @@ class RoadmapService:
         subroadmap = Roadmap(
             uid=nanoid.generate(size=10),
             user_id=roadmap.user_id,
+            is_subroadmap=True,
             title=subroadmap_result['title']
         )
         db.add(subroadmap)
