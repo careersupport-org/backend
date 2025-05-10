@@ -13,3 +13,4 @@ pytest-cov
 nanoid
 langchain
 langchain_openai
+pymysql
