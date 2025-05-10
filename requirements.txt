@@ -14,3 +14,4 @@ nanoid
 langchain
 langchain_openai
 pymysql
+cryptography
