@@ -151,6 +151,10 @@ class LearningResourceListSchema(BaseModel):
             }
         }
 
+class LearningResourceCreateResponse(BaseModel):
+    url: str = Field(..., description="학습 리소스 URL")
+
+
 class ErrorResponse(BaseModel):
     """에러 응답"""
     code: str = Field(description="에러 코드")

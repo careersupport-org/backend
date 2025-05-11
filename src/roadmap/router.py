@@ -1,18 +1,21 @@
-from fastapi import APIRouter, HTTPException, Depends, Request
+from fastapi import APIRouter, HTTPException, Depends
 from sqlalchemy.orm import Session
 from database import get_db
 from .schemas import (
     RoadmapCreateRequest, RoadmapResponse, RoadmapListResponse,
     RoadmapDetailSchema, LearningResourceListSchema, ErrorResponse,
-    BookmarkedStepListResponse, BookmarkedStep
+    BookmarkedStepListResponse, LearningResourceCreateResponse,
+    LearningResourceCreateResponse, LearningResourceSchema
 )
 from .service import RoadmapService
 from src.auth.router import get_current_user_from_token
 from src.auth.dtos import UserDTO
 from fastapi.responses import StreamingResponse
-from src.auth.service import UserService
 from pydantic import BaseModel
 import logging
+from src.auth.models import KakaoUser
+from src.roadmap import service
+
 
 router = APIRouter(prefix="/roadmap", tags=["roadmap"])
 logger = logging.getLogger(__name__)
@@ -391,3 +394,39 @@ async def create_subroadmap(
                 detail=f"서버 오류: {str(e)}"
             ).dict()
         )
+
+@router.post("/step/{step_id}/resources", response_model=LearningResourceSchema)
+async def add_learning_resource(
+    step_id: str,
+    resource: LearningResourceCreateResponse,
+    db: Session = Depends(get_db),
+    current_user: KakaoUser = Depends(get_current_user_from_token)
+):
+    """
+    로드맵 단계에 학습 리소스를 추가합니다.
+    """
+    return await RoadmapService.add_learning_resource(db, step_id, resource.url)
+
+@router.delete("/step/resources/{resource_uid}", responses={
+    200: {"description": "학습 리소스 삭제 성공"},
+    401: {"model": ErrorResponse, "description": "인증 오류"},
+    404: {"model": ErrorResponse, "description": "학습 리소스를 찾을 수 없음"},
+    500: {"model": ErrorResponse, "description": "서버 오류"}
+})
+async def remove_learning_resource(
+    resource_uid: str,
+    current_user: UserDTO = Depends(get_current_user_from_token),
+    db: Session = Depends(get_db)
+):
+    """학습 리소스를 삭제합니다.
+    
+    Args:
+        resource_uid (str): 학습 리소스 UID
+        current_user (UserDTO): 현재 인증된 사용자 정보
+        db (Session): 데이터베이스 세션
+    """
+    try:
+        await RoadmapService.remove_learning_resource(db, resource_uid)
+        return {"message": "학습 리소스 삭제 성공"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail="서버 오류가 발생했습니다.")

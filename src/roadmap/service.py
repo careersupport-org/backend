@@ -494,3 +494,45 @@ class RoadmapService:
         db.commit()
 
         return subroadmap.uid
+
+    @classmethod
+    async def add_learning_resource(cls, db: Session, step_uid: str, url: str) -> LearningResourceSchema:
+        """학습 리소스를 추가합니다.
+        
+        Args:
+            db (Session): 데이터베이스 세션
+            step_uid (str): 로드맵 단계 UID
+            url (str): 학습 리소스 URL
+
+        Returns:
+            LearningResourceSchema: 추가된 학습 리소스 정보
+        """
+        step = db.query(RoadmapStepModel).filter(RoadmapStepModel.uid == step_uid).first()
+        if not step:
+            raise Exception("Roadmap step not found")
+
+        resource = LearningResource(
+            uid=nanoid.generate(size=10),
+            step_id=step.id,
+            url=url
+        )
+        
+        db.add(resource)
+        db.commit()
+        return LearningResourceSchema(id=resource.uid, url=resource.url)
+    
+    @classmethod
+    async def remove_learning_resource(cls, db: Session, resource_uid: str) -> None:
+        """학습 리소스를 삭제합니다.
+        
+        Args:
+            db (Session): 데이터베이스 세션
+            resource_uid (str): 학습 리소스 UID
+        """
+        resource = db.query(LearningResource).filter(LearningResource.uid == resource_uid).first()
+        if not resource:
+            raise Exception("Learning resource not found")
+
+        db.delete(resource)
+        db.commit()
+        return True
