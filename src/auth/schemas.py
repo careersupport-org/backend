@@ -67,3 +67,17 @@ class ProfileUpdateRequest(BaseModel):
             }
         }
 
+class UserProfileSchema(BaseModel):
+    """사용자 프로필"""
+    id: str = Field(
+        description="사용자 ID"
+    )
+    nickname: str = Field(
+        description="사용자 닉네임"
+    )
+    profile_image: Optional[str] = Field(
+        description="사용자 프로필 이미지 URL"
+    )
+    bio: Optional[str] = Field(
+        description="자기소개"
+    )

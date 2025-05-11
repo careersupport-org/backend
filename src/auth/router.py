@@ -9,7 +9,7 @@ from database import get_db
 from .service import UserService
 from .exceptions import JWTException, TokenExpiredError, InvalidTokenError, UserNotFoundError
 from .utils import create_access_token, verify_token
-from .schemas import LoginResponse, ErrorResponse, UserInfoSchema, ProfileUpdateRequest
+from .schemas import LoginResponse, ErrorResponse, UserInfoSchema, ProfileUpdateRequest, UserProfileSchema
 from .dtos import UserDTO
 
 router = APIRouter(prefix="/oauth", tags=["oauth"])
@@ -208,6 +208,43 @@ async def update_profile(
             status_code=401,
             detail=ErrorResponse(
                 code="401",
+                detail="사용자를 찾을 수 없습니다"
+            ).dict()
+        )
+
+@router.get("/me/profile", response_model=UserProfileSchema, responses={
+    401: {"model": ErrorResponse, "description": "인증 오류"},
+    404: {"model": ErrorResponse, "description": "사용자를 찾을 수 없음"}
+})
+async def get_my_profile(
+    current_user: UserDTO = Depends(get_current_user_from_token),
+    db: Session = Depends(get_db)
+):
+    """현재 인증된 사용자의 프로필 정보를 반환합니다.
+    
+    Args:
+        current_user (UserDTO): 현재 인증된 사용자 정보
+        db (Session): 데이터베이스 세션
+        
+    Returns:
+        UserInfoSchema: 사용자 프로필 정보
+        
+    Raises:
+        HTTPException: 인증되지 않은 경우 또는 사용자를 찾을 수 없는 경우
+    """
+    try:
+        user = UserService.find_user(db, current_user.uid)
+        return UserProfileSchema(
+            id=user.uid,
+            nickname=user.nickname,
+            profile_image=user.profile_image,
+            bio=user.profile
+        )
+    except UserNotFoundError:
+        raise HTTPException(
+            status_code=404,
+            detail=ErrorResponse(
+                code="404",
                 detail="사용자를 찾을 수 없습니다"
             ).dict()
         )

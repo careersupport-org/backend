@@ -257,7 +257,7 @@ async def create_roadmap(
                 code="500",
                 detail=f"서버 오류: {str(e)}"
             ).dict()
-        )
+        ) 
 
 @router.post("/step/{step_uid}/bookmark", responses={
     401: {"model": ErrorResponse, "description": "인증 오류"},
