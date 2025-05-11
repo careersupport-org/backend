@@ -123,13 +123,31 @@ class RoadmapDetailSchema(BaseModel):
 
 class LearningResourceSchema(BaseModel):
     """학습 리소스"""
-    url: List[str] = Field(description="리소스 URL 목록")
+    id: str = Field(description="리소스 ID")
+    url: str = Field(description="리소스 URL")
 
 
     class Config:
         json_schema_extra = {
             "example": {
-                "url": ["https://docs.oracle.com/javase/tutorial/", "https://docs.oracle.com/javase/tutorial/"]
+                "id": "resource123",
+                "url": "https://docs.oracle.com/javase/tutorial/"
+            }
+        }
+
+class LearningResourceListSchema(BaseModel):
+    """학습 리소스 목록"""
+    resources: List[LearningResourceSchema] = Field(description="학습 리소스 목록")
+
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "resources": [
+                    {
+                        "id": "resource123",
+                        "url": "https://docs.oracle.com/javase/tutorial/"
+                    }
+                ]
             }
         }
 
