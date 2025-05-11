@@ -203,7 +203,8 @@ class RoadmapService:
     @classmethod
     async def get_step_guide(cls, db: Session, step_uid: str) -> StreamingResponse:
         step = db.query(RoadmapStepModel).filter(RoadmapStepModel.uid == step_uid).options(
-            joinedload(RoadmapStepModel.roadmap)
+            joinedload(RoadmapStepModel.roadmap),
+            joinedload(RoadmapStepModel.tags)
         ).first()
         
         if not step:
