@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 from database import get_db
 from .schemas import (
     RoadmapCreateRequest, RoadmapResponse, RoadmapListResponse,
-    RoadmapDetailSchema, LearningResourceResponse, ErrorResponse,
+    RoadmapDetailSchema, LearningResourceSchema, ErrorResponse,
     BookmarkedStepListResponse, BookmarkedStep
 )
 from .service import RoadmapService
@@ -129,7 +129,7 @@ async def get_roadmap(
             ).dict()
         )
 
-@router.get("/step/{step_uid}/resources", response_model=LearningResourceResponse, responses={
+@router.get("/step/{step_uid}/resources", response_model=LearningResourceSchema, responses={
     401: {"model": ErrorResponse, "description": "인증 오류"},
     404: {"model": ErrorResponse, "description": "로드맵 단계를 찾을 수 없음"},
     500: {"model": ErrorResponse, "description": "서버 오류"}
@@ -147,8 +147,7 @@ async def get_learning_resources(
         db (Session): 데이터베이스 세션
         
     Returns:
-        LearningResourceResponse: 추천된 학습 리소스 목록
-        
+        LearningResourceSchema: 추천된 학습 리소스 목록
     Raises:
         HTTPException: 인증되지 않은 경우, 로드맵 단계를 찾을 수 없는 경우 또는 서버 오류 발생 시
     """

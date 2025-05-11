@@ -77,7 +77,6 @@ class LearningResource(Base):
     uid = Column(String(10), unique=True, index=True, nullable=False)
     step_id = Column(Integer, ForeignKey('roadmap_steps.id'), nullable=False)
     url = Column(String(500), nullable=False)
-    resource_type = Column(String(50), nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
 

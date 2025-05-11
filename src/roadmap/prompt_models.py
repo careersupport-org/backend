@@ -42,10 +42,6 @@ class RoadMap(BaseModel):
             datetime: lambda v: v.isoformat()
         }
 
-class LearningResource(BaseModel):
+class LearningResourcePromptModel(BaseModel):
     url: List[str] = Field(description="Direct links to the most relevant learning resources")
-    resource_type: Literal["official_documentation", "book", "online_video_course", "paper"] = Field(
-        description="Resource type limited to official documentation, books, online video courses, article, or papers"
-    )
-class LearningResourceList(BaseModel):
-    learning_resources: List[LearningResource] = Field(description="List of learning resources")
+    

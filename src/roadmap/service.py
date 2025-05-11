@@ -10,7 +10,7 @@ import sys
 import traceback
 from .schemas import (
     RoadmapListItemSchema, RoadmapDetailSchema, RoadmapStepSchema,
-    LearningResourceResponse, LearningResourceSchema, BookmarkedStepListResponse,
+     LearningResourceSchema, BookmarkedStepListResponse,
     BookmarkedStep
 )
 from fastapi.responses import StreamingResponse
@@ -27,7 +27,7 @@ class RoadmapService:
     logger = logging.getLogger(__name__)
 
     @classmethod
-    async def recommend_learning_resources(cls, db: Session, step_uid: str) -> LearningResourceResponse:
+    async def recommend_learning_resources(cls, db: Session, step_uid: str) -> LearningResourceSchema:
         """로드맵 단계에 대한 학습 리소스를 추천합니다.
         
         Args:
@@ -35,7 +35,7 @@ class RoadmapService:
             step_uid (str): 로드맵 단계 UID
             
         Returns:
-            LearningResourceResponse: 추천된 학습 리소스 목록
+            List[LearningResourceSchema]: 추천된 학습 리소스 목록
             
         Raises:
             Exception: 로드맵 단계를 찾을 수 없는 경우
@@ -51,16 +51,7 @@ class RoadmapService:
             ).all()
 
             if existing_resources:
-                # 기존 학습 리소스가 있으면 반환
-                return LearningResourceResponse(
-                    resources=[
-                        LearningResourceSchema(
-                            url=resource.url,
-                            resource_type=resource.resource_type
-                        )
-                        for resource in existing_resources
-                    ]
-                )
+                return LearningResourceSchema(url=[resource.url for resource in existing_resources])
 
             # LLM을 통해 학습 리소스 추천
             result = await cls.recommend_resource_chain.ainvoke({
@@ -68,27 +59,19 @@ class RoadmapService:
                 "tags": " ,".join([tag.name for tag in step.tags]),
                 "language": "korean"
             })
-
             # 새로운 학습 리소스 저장
-            resources = []
-            for resource in result["learning_resources"]:
+            for url in result["url"]:
                 learning_resource = LearningResource(
                     uid=nanoid.generate(size=10),
                     step_id=step.id,
-                    url=resource["url"],
-                    resource_type=resource["resource_type"]
+                    url=url
                 )
                 db.add(learning_resource)
-                resources.append(
-                    LearningResourceSchema(
-                        url=resource["url"],
-                        resource_type=resource["resource_type"]
-                    )
-                )
+
 
             db.commit()
 
-            return LearningResourceResponse(resources=resources)
+            return LearningResourceSchema(url=result["url"])
         except Exception as e:
             error_msg = f"Error in recommend_learning_resources: {str(e)}\n"
             error_msg += f"Error type: {type(e).__name__}\n"

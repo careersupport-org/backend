@@ -2,7 +2,7 @@ from langchain_openai import ChatOpenAI
 from langchain.prompts import load_prompt
 from langchain_core.output_parsers import JsonOutputParser
 from langchain.schema.runnable import RunnablePassthrough
-from .prompt_models import RoadMap, LearningResourceList
+from .prompt_models import RoadMap, LearningResourcePromptModel
 import os
 
 model_name = os.environ["ROADMAP_CREATE_MODEL_NAME"]
@@ -61,7 +61,7 @@ class LLMConfig:
         )
 
         prompt = load_prompt("prompts/recommend_learning_resource_prompt.json")
-        parser = JsonOutputParser(pydantic_object=LearningResourceList)
+        parser = JsonOutputParser(pydantic_object=LearningResourcePromptModel)
 
         def get_format_instructions(_):
             return parser.get_format_instructions()
