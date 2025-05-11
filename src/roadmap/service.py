@@ -1,5 +1,5 @@
 from sqlalchemy.orm import Session, joinedload
-from .models import Roadmap, RoadmapStep as RoadmapStepModel, Tag
+from .models import Roadmap, RoadmapStep as RoadmapStepModel, Tag, LearningResource
 from .config import LLMConfig
 from src.auth.service import UserService
 from src.auth.models import KakaoUser
@@ -45,6 +45,23 @@ class RoadmapService:
             raise Exception("Roadmap step not found")
 
         try:
+            # 기존 학습 리소스 확인
+            existing_resources = db.query(LearningResource).filter(
+                LearningResource.step_id == step.id
+            ).all()
+
+            if existing_resources:
+                # 기존 학습 리소스가 있으면 반환
+                return LearningResourceResponse(
+                    resources=[
+                        LearningResourceSchema(
+                            url=resource.url,
+                            resource_type=resource.resource_type
+                        )
+                        for resource in existing_resources
+                    ]
+                )
+
             # LLM을 통해 학습 리소스 추천
             result = await cls.recommend_resource_chain.ainvoke({
                 "description": step.title,
@@ -52,14 +69,24 @@ class RoadmapService:
                 "language": "korean"
             })
 
-            # 결과를 LearningResourceResponse 형식으로 변환
-            resources = [
-                LearningResourceSchema(
+            # 새로운 학습 리소스 저장
+            resources = []
+            for resource in result["learning_resources"]:
+                learning_resource = LearningResource(
+                    uid=nanoid.generate(size=10),
+                    step_id=step.id,
                     url=resource["url"],
                     resource_type=resource["resource_type"]
                 )
-                for resource in result["learning_resources"]
-            ]
+                db.add(learning_resource)
+                resources.append(
+                    LearningResourceSchema(
+                        url=resource["url"],
+                        resource_type=resource["resource_type"]
+                    )
+                )
+
+            db.commit()
 
             return LearningResourceResponse(resources=resources)
         except Exception as e:
@@ -67,6 +94,7 @@ class RoadmapService:
             error_msg += f"Error type: {type(e).__name__}\n"
             error_msg += f"Traceback:\n{traceback.format_exc()}"
             cls.logger.error(error_msg)
+            db.rollback()
             raise e
 
     @classmethod

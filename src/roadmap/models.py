@@ -50,6 +50,7 @@ class RoadmapStep(Base):
     roadmap = relationship("Roadmap", back_populates="steps", foreign_keys=[roadmap_id])
     sub_roadmap = relationship("Roadmap", back_populates="parent_steps", foreign_keys=[sub_roadmap_uid])
     tags = relationship("Tag", secondary=roadmap_step_tags, back_populates="steps")
+    learning_resources = relationship("LearningResource", back_populates="step")
 
     def __repr__(self):
         return f"<RoadmapStep(id={self.id}, step={self.step}, title={self.title})>"
@@ -66,4 +67,22 @@ class Tag(Base):
     steps = relationship("RoadmapStep", secondary=roadmap_step_tags, back_populates="tags")
 
     def __repr__(self):
-        return f"<Tag(id={self.id}, name={self.name})>" 
+        return f"<Tag(id={self.id}, name={self.name})>"
+
+class LearningResource(Base):
+    """학습 리소스 모델"""
+    __tablename__ = "learning_resources"
+
+    id = Column(Integer, primary_key=True, index=True)
+    uid = Column(String(10), unique=True, index=True, nullable=False)
+    step_id = Column(Integer, ForeignKey('roadmap_steps.id'), nullable=False)
+    url = Column(String(500), nullable=False)
+    resource_type = Column(String(50), nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
+
+    # 관계 설정
+    step = relationship("RoadmapStep", back_populates="learning_resources")
+
+    def __repr__(self):
+        return f"<LearningResource(id={self.id}, url={self.url}, resource_type={self.resource_type})>" 
