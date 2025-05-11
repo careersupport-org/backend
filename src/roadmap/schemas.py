@@ -166,6 +166,7 @@ class ErrorResponse(BaseModel):
 
 class BookmarkedStep(BaseModel):
     """북마크된 Step 정보"""
+    title: str = Field(description="단계 제목")
     roadmap_uid: str = Field(description="로드맵 UID")
     step_uid: str = Field(description="Step UID")
 

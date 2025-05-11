@@ -378,6 +378,7 @@ class RoadmapService:
             # 응답 형식으로 변환
             steps = [
                 BookmarkedStep(
+                    title=step.title,
                     roadmap_uid=step.roadmap.uid,
                     step_uid=step.uid
                 )
