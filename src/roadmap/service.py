@@ -183,7 +183,7 @@ class RoadmapService:
                 title=roadmap_result['title']
             )
             db.add(roadmap)
-            db.flush()  # roadmap.id를 얻기 위해 flush
+            db.flush()  
 
             # RoadmapStep 생성
             for step_data in roadmap_result['steps']:
@@ -194,18 +194,18 @@ class RoadmapService:
                     title=step_data['title'],
                     description=step_data['description']
                 )
-                
+                db.add(step)
+                db.flush() 
                 # 태그 처리
                 for tag_name in step_data['tags']:
                     tag = Tag(
+                        step_id = step.id,
                         uid=nanoid.generate(size=10),
                         name=tag_name
                     )
                     db.add(tag)
                     db.flush()
                     step.tags.append(tag)
-                
-                db.add(step)
 
             db.commit()
             return roadmap.uid
