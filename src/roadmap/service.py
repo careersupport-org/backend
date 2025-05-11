@@ -468,9 +468,11 @@ class RoadmapService:
         subroadmap = Roadmap(
             uid=nanoid.generate(size=10),
             user_id=roadmap.user_id,
-            is_subroadmap=True,
             title=subroadmap_result['title']
         )
+
+        step.sub_roadmap_uid = subroadmap.uid
+        db.add(step)
         db.add(subroadmap)
         db.commit()
 
