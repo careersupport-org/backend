@@ -139,7 +139,7 @@ class RoadmapService:
         user = UserService.find_user(db, user_uid)
         roadmaps = db.query(Roadmap).filter(
             Roadmap.user_id == user.id,
-            Roadmap.is_subroadmap == False
+            Roadmap.parent_step == None
         ).order_by(Roadmap.created_at.desc()).all()
         
         return [
