@@ -12,8 +12,6 @@ from .utils import create_access_token, verify_token
 from .schemas import LoginResponse, ErrorResponse, UserInfoSchema, ProfileUpdateRequest
 from .dtos import UserDTO
 
-
-
 router = APIRouter(prefix="/oauth", tags=["oauth"])
 
 # 카카오 OAuth2 설정
@@ -23,6 +21,7 @@ KAKAO_REDIRECT_URI = os.getenv("KAKAO_REDIRECT_URI")
 
 @router.get("/kakao/login")
 async def kakao_login():
+
     """카카오 로그인 페이지로 리다이렉트"""
     kakao_auth_url = f"https://kauth.kakao.com/oauth/authorize?client_id={KAKAO_CLIENT_ID}&redirect_uri={KAKAO_REDIRECT_URI}&response_type=code"
     return RedirectResponse(kakao_auth_url)
