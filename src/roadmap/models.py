@@ -1,16 +1,8 @@
-from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Boolean, Table
+from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Boolean
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from database import Base
 import nanoid
-
-# RoadmapStep과 Tag의 다대다 관계를 위한 중간 테이블
-roadmap_step_tags = Table(
-    'roadmap_step_tags',
-    Base.metadata,
-    Column('roadmap_step_id', Integer, ForeignKey('roadmap_steps.id'), primary_key=True),
-    Column('tag_id', Integer, ForeignKey('tags.id'), primary_key=True)
-)
 
 class Roadmap(Base):
     """로드맵 모델"""
@@ -20,13 +12,12 @@ class Roadmap(Base):
     uid = Column(String(10), unique=True, index=True, nullable=False)
     user_id = Column(Integer, ForeignKey('kakao_users.id'), nullable=False)
     title = Column(String(200), nullable=False)
-    is_subroadmap = Column(Boolean, default=False, nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
     
     # 관계 설정
     steps = relationship("RoadmapStep", back_populates="roadmap", cascade="all, delete-orphan", foreign_keys="RoadmapStep.roadmap_id")
-    parent_steps = relationship("RoadmapStep", back_populates="sub_roadmap", foreign_keys="RoadmapStep.sub_roadmap_uid")
+    parent_step = relationship("RoadmapStep", back_populates="sub_roadmap", foreign_keys="RoadmapStep.sub_roadmap_uid")
     user = relationship("KakaoUser", back_populates="roadmaps")
 
     def __repr__(self):
@@ -48,8 +39,8 @@ class RoadmapStep(Base):
     
     # 관계 설정
     roadmap = relationship("Roadmap", back_populates="steps", foreign_keys=[roadmap_id])
-    sub_roadmap = relationship("Roadmap", back_populates="parent_steps", foreign_keys=[sub_roadmap_uid])
-    tags = relationship("Tag", secondary=roadmap_step_tags, back_populates="steps")
+    sub_roadmap = relationship("Roadmap", back_populates="parent_step", foreign_keys=[sub_roadmap_uid])
+    tags = relationship("Tag", back_populates="step", cascade="all, delete-orphan")
     learning_resources = relationship("LearningResource", back_populates="step")
 
     def __repr__(self):
@@ -61,10 +52,11 @@ class Tag(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     uid = Column(String(10), unique=True, index=True, nullable=False)
-    name = Column(String(50), unique=False, nullable=False)
-
+    name = Column(String(50), nullable=False)
+    step_id = Column(Integer, ForeignKey('roadmap_steps.id'), nullable=False)
+    
     # 관계 설정
-    steps = relationship("RoadmapStep", secondary=roadmap_step_tags, back_populates="tags")
+    step = relationship("RoadmapStep", back_populates="tags", foreign_keys=[step_id])
 
     def __repr__(self):
         return f"<Tag(id={self.id}, name={self.name})>"
