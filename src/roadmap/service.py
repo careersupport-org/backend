@@ -40,7 +40,7 @@ class RoadmapService:
         Raises:
             Exception: 로드맵 단계를 찾을 수 없는 경우
         """
-        step = db.query(RoadmapStepModel).filter(RoadmapStepModel.uid == step_uid).first()
+        step = db.query(RoadmapStepModel).filter(RoadmapStepModel.unique_id == step_uid).first()
         if not step:
             raise Exception("Roadmap step not found")
 
@@ -53,7 +53,7 @@ class RoadmapService:
             if existing_resources:
                 return LearningResourceListSchema(
                     resources=[
-                        LearningResourceSchema(id=resource.uid, url=resource.url) 
+                        LearningResourceSchema(id=resource.unique_id, url=resource.url) 
                         for resource in existing_resources
                     ])
             # LLM을 통해 학습 리소스 추천
@@ -67,13 +67,13 @@ class RoadmapService:
             # 새로운 학습 리소스 저장
             for url in result["url"]:
                 learning_resource = LearningResource(
-                    uid=nanoid.generate(size=10),
+                    unique_id=nanoid.generate(size=10),
                     step_id=step.id,
                     url=url
                 )
                 db.add(learning_resource)
 
-                result_list.append(LearningResourceSchema(id=learning_resource.uid, url=learning_resource.url))
+                result_list.append(LearningResourceSchema(id=learning_resource.unique_id, url=learning_resource.url))
             db.commit()
 
             return LearningResourceListSchema(resources=result_list)
@@ -100,14 +100,14 @@ class RoadmapService:
         Raises:
             Exception: 로드맵을 찾을 수 없는 경우
         """
-        roadmap = db.query(Roadmap).filter(Roadmap.uid == roadmap_uid).first()
+        roadmap = db.query(Roadmap).filter(Roadmap.unique_id == roadmap_uid).first()
         if not roadmap:
             raise Exception("Roadmap not found")
 
         steps = []
         for step in roadmap.steps:
             step_detail = RoadmapStepSchema(
-                id=step.uid,
+                id=step.unique_id,
                 step=step.step,
                 title=step.title,
                 description=step.description,
@@ -118,7 +118,7 @@ class RoadmapService:
             steps.append(step_detail)
 
         return RoadmapDetailSchema(
-            id=roadmap.uid,
+            id=roadmap.unique_id,
             title=roadmap.title,
             steps=steps,
             createdAt=roadmap.created_at,
@@ -144,7 +144,7 @@ class RoadmapService:
         
         return [
             RoadmapListItemSchema(
-                uid=roadmap.uid,
+                uid=roadmap.unique_id,
                 title=roadmap.title,
                 created_at=roadmap.created_at,
                 updated_at=roadmap.updated_at
@@ -178,7 +178,7 @@ class RoadmapService:
 
             # Roadmap 생성
             roadmap = Roadmap(
-                uid=nanoid.generate(size=10),
+                unique_id=nanoid.generate(size=10),
                 user_id=user.id,
                 title=roadmap_result['title']
             )
@@ -188,7 +188,7 @@ class RoadmapService:
             # RoadmapStep 생성
             for step_data in roadmap_result['steps']:
                 step = RoadmapStepModel(
-                    uid=nanoid.generate(size=10),
+                    unique_id=nanoid.generate(size=10),
                     roadmap_id=roadmap.id,  # flush 후 roadmap.id 사용
                     step=step_data['step'],
                     title=step_data['title'],
@@ -200,7 +200,7 @@ class RoadmapService:
                 for tag_name in step_data['tags']:
                     tag = Tag(
                         step_id = step.id,
-                        uid=nanoid.generate(size=10),
+                        unique_id=nanoid.generate(size=10),
                         name=tag_name
                     )
                     db.add(tag)
@@ -208,7 +208,7 @@ class RoadmapService:
                     step.tags.append(tag)
 
             db.commit()
-            return roadmap.uid
+            return roadmap.unique_id
         except Exception as e:
             error_msg = f"Error in create_roadmap: {str(e)}\n"
             error_msg += f"Error type: {type(e).__name__}\n"
@@ -219,7 +219,7 @@ class RoadmapService:
 
     @classmethod
     async def get_step_guide(cls, db: Session, step_uid: str) -> StreamingResponse:
-        step = db.query(RoadmapStepModel).filter(RoadmapStepModel.uid == step_uid).options(
+        step = db.query(RoadmapStepModel).filter(RoadmapStepModel.unique_id == step_uid).options(
             joinedload(RoadmapStepModel.roadmap),
             joinedload(RoadmapStepModel.tags)
         ).first()
@@ -297,7 +297,7 @@ class RoadmapService:
             db = SessionLocal()
             
             try:
-                step = db.query(RoadmapStepModel).filter(RoadmapStepModel.uid == step_uid).first()
+                step = db.query(RoadmapStepModel).filter(RoadmapStepModel.unique_id == step_uid).first()
                 if step:
                     step.guide = complete_guide
                     db.commit()
@@ -327,7 +327,7 @@ class RoadmapService:
             Exception: 권한이 없는 경우
         """
         # 로드맵 단계와 관련된 로드맵 정보를 함께 조회
-        step = db.query(RoadmapStepModel).filter(RoadmapStepModel.uid == step_uid).options(
+        step = db.query(RoadmapStepModel).filter(RoadmapStepModel.unique_id == step_uid).options(
             joinedload(RoadmapStepModel.roadmap)
         ).first()
         
@@ -335,8 +335,8 @@ class RoadmapService:
             raise Exception("Roadmap step not found")
 
         # 로드맵 생성자 확인
-        roadmap_creator = UserService.find_user(db, step.roadmap.user.uid)
-        if roadmap_creator.uid != current_user_uid:
+        roadmap_creator = UserService.find_user(db, step.roadmap.user.unique_id)
+        if roadmap_creator.unique_id != current_user_uid:
             raise Exception("Permission denied")
 
         try:
@@ -372,15 +372,15 @@ class RoadmapService:
                 Roadmap.user_id == KakaoUser.id
             ).filter(
                 RoadmapStepModel.is_bookmarked == True,
-                KakaoUser.uid == user_uid
+                KakaoUser.unique_id == user_uid
             ).all()
 
             # 응답 형식으로 변환
             steps = [
                 BookmarkedStep(
                     title=step.title,
-                    roadmap_uid=step.roadmap.uid,
-                    step_uid=step.uid
+                    roadmap_uid=step.roadmap.unique_id,
+                    step_uid=step.unique_id
                 )
                 for step in bookmarked_steps
             ]
@@ -407,7 +407,7 @@ class RoadmapService:
             StreamingResponse: 로드맵 어시스턴트 응답
         """
 
-        roadmap = db.query(Roadmap).filter(Roadmap.uid == roadmap_uid).first()
+        roadmap = db.query(Roadmap).filter(Roadmap.unique_id == roadmap_uid).first()
         if not roadmap:
             raise Exception("Roadmap not found")
 
@@ -448,7 +448,7 @@ class RoadmapService:
         Returns:
             str: 생성된 서브 로드맵 UID
         """
-        step = db.query(RoadmapStepModel).filter(RoadmapStepModel.uid == step_uid).options(
+        step = db.query(RoadmapStepModel).filter(RoadmapStepModel.unique_id == step_uid).options(
             joinedload(RoadmapStepModel.roadmap)
         ).first()
 
@@ -466,34 +466,34 @@ class RoadmapService:
         })
         
         subroadmap = Roadmap(
-            uid=nanoid.generate(size=10),
+            unique_id=nanoid.generate(size=10),
             user_id=roadmap.user_id,
             title=subroadmap_result['title']
         )
 
-        step.sub_roadmap_uid = subroadmap.uid
+        step.sub_roadmap_uid = subroadmap.unique_id
         db.add(step)
         db.add(subroadmap)
         db.commit()
 
         for step_data in subroadmap_result['steps']:
             step = RoadmapStepModel(
-                uid=nanoid.generate(size=10),
+                unique_id=nanoid.generate(size=10),
                 roadmap_id=subroadmap.id,
                 step=step_data['step'],
                 title=step_data['title'],
                 description=step_data['description'],
-                tags=[Tag(uid=nanoid.generate(size=10), name=tag) for tag in step_data['tags']]
+                tags=[Tag(unique_id=nanoid.generate(size=10), name=tag) for tag in step_data['tags']]
             )
             db.add(step)
 
-        db.query(RoadmapStepModel).filter(RoadmapStepModel.uid == step_uid).update(
-            {"sub_roadmap_uid": subroadmap.uid}
+        db.query(RoadmapStepModel).filter(RoadmapStepModel.unique_id == step_uid).update(
+            {"sub_roadmap_uid": subroadmap.unique_id}
         )
-        cls.logger.info(f"Subroadmap created and linked: {subroadmap.uid}")
+        cls.logger.info(f"Subroadmap created and linked: {subroadmap.unique_id}")
         db.commit()
 
-        return subroadmap.uid
+        return subroadmap.unique_id
 
     @classmethod
     async def add_learning_resource(cls, db: Session, step_uid: str, url: str) -> LearningResourceSchema:
@@ -507,19 +507,19 @@ class RoadmapService:
         Returns:
             LearningResourceSchema: 추가된 학습 리소스 정보
         """
-        step = db.query(RoadmapStepModel).filter(RoadmapStepModel.uid == step_uid).first()
+        step = db.query(RoadmapStepModel).filter(RoadmapStepModel.unique_id == step_uid).first()
         if not step:
             raise Exception("Roadmap step not found")
 
         resource = LearningResource(
-            uid=nanoid.generate(size=10),
+            unique_id=nanoid.generate(size=10),
             step_id=step.id,
             url=url
         )
         
         db.add(resource)
         db.commit()
-        return LearningResourceSchema(id=resource.uid, url=resource.url)
+        return LearningResourceSchema(id=resource.unique_id, url=resource.url)
     
     @classmethod
     async def remove_learning_resource(cls, db: Session, resource_uid: str) -> None:
@@ -529,7 +529,7 @@ class RoadmapService:
             db (Session): 데이터베이스 세션
             resource_uid (str): 학습 리소스 UID
         """
-        resource = db.query(LearningResource).filter(LearningResource.uid == resource_uid).first()
+        resource = db.query(LearningResource).filter(LearningResource.unique_id == resource_uid).first()
         if not resource:
             raise Exception("Learning resource not found")
 

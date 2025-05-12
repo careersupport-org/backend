@@ -61,7 +61,7 @@ async def kakao_callback(code: str, db: Session = Depends(get_db)):
             
             # JWT 토큰 생성
             token_data = {
-                "sub": user.uid,
+                "sub": user.unique_id,
                 "kakao_id": str(user.kakao_id),
                 "nickname": user.nickname
             }
@@ -199,7 +199,7 @@ async def update_profile(
     try:
         user = UserService.update_user_profile(db, current_user.uid, profile_update.profile)
         return UserInfoSchema(
-            id=user.uid,
+            id=user.unique_id,
             nickname=user.nickname,
             profile_image=user.profile_image
         )
@@ -235,7 +235,7 @@ async def get_my_profile(
     try:
         user = UserService.find_user(db, current_user.uid)
         return UserProfileSchema(
-            id=user.uid,
+            id=user.unique_id,
             nickname=user.nickname,
             profile_image=user.profile_image,
             bio=user.profile

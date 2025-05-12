@@ -8,7 +8,7 @@ class KakaoUser(Base):
     __tablename__ = "kakao_users"
 
     id = Column(Integer, primary_key=True, index=True)
-    uid = Column(String(10), unique=True, index=True, nullable=False)
+    unique_id = Column(String(10), unique=True, index=True, nullable=False)
     kakao_id = Column(BigInteger, unique=True, index=True, nullable=False)
     nickname = Column(String(100), nullable=False)
     profile_image = Column(String(500), nullable=True)

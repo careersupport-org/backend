@@ -26,7 +26,7 @@ class UserService:
             # 새 사용자 생성
             user = KakaoUser(
                 kakao_id=kakao_id,
-                uid=nanoid.generate(size=10),
+                unique_id=nanoid.generate(size=10),
                 nickname=nickname,
                 profile_image=profile_image
             )
@@ -51,7 +51,7 @@ class UserService:
         Raises:
             UserNotFoundError: 사용자를 찾을 수 없는 경우
         """
-        user = db.query(KakaoUser).filter(KakaoUser.uid == user_uid).first()
+        user = db.query(KakaoUser).filter(KakaoUser.unique_id == user_uid).first()
         if not user:
             raise UserNotFoundError()
             
@@ -74,7 +74,7 @@ class UserService:
         Raises:
             UserNotFoundError: 사용자를 찾을 수 없는 경우
         """
-        user = db.query(KakaoUser).filter(KakaoUser.uid == user_uid).first()
+        user = db.query(KakaoUser).filter(KakaoUser.unique_id == user_uid).first()
         if not user:
             raise UserNotFoundError()
         return user 

@@ -41,7 +41,7 @@ def test_get_user_by_kakao_id_existing_user(db_session, sample_user_info):
     """
     # Given: 데이터베이스에 사용자 생성
     user = KakaoUser(
-        uid=nanoid.generate(size=10),
+        unique_id=nanoid.generate(size=10),
         kakao_id=sample_user_info["id"],
         nickname=sample_user_info["properties"]["nickname"],
         profile_image=sample_user_info["properties"]["profile_image"]
@@ -108,7 +108,7 @@ def test_create_or_update_user_existing_user(db_session, sample_user_info):
     """
     # Given: 기존 사용자 생성
     original_user = KakaoUser(
-        uid=nanoid.generate(size=10),
+        unique_id=nanoid.generate(size=10),
         kakao_id=sample_user_info["id"],
         nickname="이전닉네임",
         profile_image="https://example.com/old_profile.jpg"
@@ -162,7 +162,7 @@ def test_update_user_profile_success(db_session):
     # Given: 테스트용 사용자 생성
     user = KakaoUser(
         kakao_id=123456789,
-        uid="test123",
+        unique_id="test123",
         nickname="테스트유저",
         profile_image="https://example.com/profile.jpg",
         last_logined_at=datetime.now(UTC)
@@ -179,7 +179,7 @@ def test_update_user_profile_success(db_session):
     
     # Then: 프로필이 업데이트되었는지 확인
     assert updated_user.profile == "안녕하세요! 저는 개발자입니다."
-    assert updated_user.uid == "test123"
+    assert updated_user.unique_id == "test123"
     assert updated_user.nickname == "테스트유저"
     assert updated_user.profile_image == "https://example.com/profile.jpg"
 
@@ -215,7 +215,7 @@ def test_update_user_profile_empty(db_session):
     # Given: 테스트용 사용자 생성
     user = KakaoUser(
         kakao_id=123456789,
-        uid="test123",
+        unique_id="test123",
         nickname="테스트유저",
         profile_image="https://example.com/profile.jpg",
         last_logined_at=datetime.now(UTC)
@@ -232,7 +232,7 @@ def test_update_user_profile_empty(db_session):
     
     # Then: 프로필이 빈 문자열로 업데이트되었는지 확인
     assert updated_user.profile == ""
-    assert updated_user.uid == "test123"
+    assert updated_user.unique_id == "test123"
     assert updated_user.nickname == "테스트유저"
     assert updated_user.profile_image == "https://example.com/profile.jpg"
     db_session.query(KakaoUser).delete()
@@ -243,7 +243,7 @@ def test_find_user_success(db_session):
     # Given
     user = KakaoUser(
         kakao_id=123456789,
-        uid="test_uid_1",
+        unique_id="test_uid_1",
         nickname="Test User",
         profile_image="https://example.com/profile.jpg",
         profile="Test profile",
@@ -257,7 +257,7 @@ def test_find_user_success(db_session):
 
     # Then
     assert found_user is not None
-    assert found_user.uid == "test_uid_1"
+    assert found_user.unique_id == "test_uid_1"
     assert found_user.nickname == "Test User"
     assert found_user.profile_image == "https://example.com/profile.jpg"
     assert found_user.profile == "Test profile"

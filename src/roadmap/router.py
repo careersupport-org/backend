@@ -116,6 +116,7 @@ async def get_roadmap(
         roadmap = RoadmapService.get_roadmap_by_uid(db, roadmap_uid)
         return roadmap
     except Exception as e:
+
         if str(e) == "Roadmap not found":
             raise HTTPException(
                 status_code=404,

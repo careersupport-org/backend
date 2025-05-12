@@ -28,7 +28,7 @@ def db_session():
 def sample_user(db_session):
     """테스트용 사용자를 생성합니다."""
     user = KakaoUser(
-        uid=nanoid.generate(size=10),
+        unique_id=nanoid.generate(size=10),
         kakao_id=123456789,
         nickname="테스트유저",
         profile_image="https://example.com/profile.jpg",

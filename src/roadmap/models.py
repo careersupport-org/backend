@@ -9,7 +9,7 @@ class Roadmap(Base):
     __tablename__ = "roadmaps"
 
     id = Column(Integer, primary_key=True, index=True)
-    uid = Column(String(10), unique=True, index=True, nullable=False)
+    unique_id = Column(String(10), unique=True, index=True, nullable=False)
     user_id = Column(Integer, ForeignKey('kakao_users.id'), nullable=False)
     title = Column(String(200), nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
@@ -28,14 +28,14 @@ class RoadmapStep(Base):
     __tablename__ = "roadmap_steps"
 
     id = Column(Integer, primary_key=True, index=True)
-    uid = Column(String(10), unique=True, index=True, nullable=False)
+    unique_id = Column(String(10), unique=True, index=True, nullable=False)
     roadmap_id = Column(Integer, ForeignKey('roadmaps.id'), nullable=False)
     step = Column(Integer, nullable=False)
     title = Column(String(200), nullable=False)
     description = Column(String(1000), nullable=False)
     guide = Column(String(2048), nullable=True)
     is_bookmarked = Column(Boolean, default=False, nullable=False)
-    sub_roadmap_uid = Column(String(10), ForeignKey('roadmaps.uid'), nullable=True)
+    sub_roadmap_uid = Column(String(10), ForeignKey('roadmaps.unique_id'), nullable=True)
     
     # 관계 설정
     roadmap = relationship("Roadmap", back_populates="steps", foreign_keys=[roadmap_id])
@@ -51,7 +51,7 @@ class Tag(Base):
     __tablename__ = "tags"
 
     id = Column(Integer, primary_key=True, index=True)
-    uid = Column(String(10), unique=True, index=True, nullable=False)
+    unique_id = Column(String(10), unique=True, index=True, nullable=False)
     name = Column(String(50), nullable=False)
     step_id = Column(Integer, ForeignKey('roadmap_steps.id'), nullable=False)
     
@@ -66,7 +66,7 @@ class LearningResource(Base):
     __tablename__ = "learning_resources"
 
     id = Column(Integer, primary_key=True, index=True)
-    uid = Column(String(10), unique=True, index=True, nullable=False)
+    unique_id = Column(String(10), unique=True, index=True, nullable=False)
     step_id = Column(Integer, ForeignKey('roadmap_steps.id'), nullable=False)
     url = Column(String(500), nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
