@@ -18,10 +18,7 @@ load_dotenv()
 app = FastAPI()
 
 # CORS 설정
-origins = [
-    "http://localhost:3000",  # React 개발 서버
-    "http://localhost:8000",  # FastAPI 개발 서버
-]
+origins = os.getenv("ALLOWED_ORIGINS", "http://localhost:3000,http://localhost:8000").split(",")
 
 app.add_middleware(
     CORSMiddleware,
