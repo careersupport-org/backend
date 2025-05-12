@@ -15,7 +15,7 @@ from pydantic import BaseModel
 import logging
 from src.auth.models import KakaoUser
 from src.roadmap import service
-
+from .exceptions import RoadmapCreatorMaxCountException
 
 router = APIRouter(prefix="/roadmap", tags=["roadmap"])
 logger = logging.getLogger(__name__)
@@ -252,7 +252,14 @@ async def create_roadmap(
         return RoadmapResponse(
             id=generated_roadmap_id
         )
-        
+    except RoadmapCreatorMaxCountException as e:
+        raise HTTPException(
+            status_code=400,
+            detail=ErrorResponse(
+                code="400",
+                detail=e.message
+            ).dict()
+        )
     except Exception as e:
         raise HTTPException(
             status_code=500,
@@ -377,9 +384,18 @@ async def create_subroadmap(
         HTTPException: 인증되지 않은 경우, 로드맵 단계를 찾을 수 없는 경우 또는 서버 오류 발생 시
     """
     try:
-        subroadmap_uid = await RoadmapService.create_subroadmap(db, step_uid)
+        subroadmap_uid = await RoadmapService.create_subroadmap(db, step_uid, current_user.uid)
         return {"subroadmap_uid": subroadmap_uid}
+    except RoadmapCreatorMaxCountException as e:
+        raise HTTPException(
+            status_code=400,
+            detail=ErrorResponse(
+                code="400",
+                detail=e.message
+            ).dict()
+        )
     except Exception as e:
+        print(e)
         if str(e) == "Roadmap step not found":
             raise HTTPException(
                 status_code=404,

@@ -1,4 +1,6 @@
 from sqlalchemy.orm import Session, joinedload
+
+from .exceptions import RoadmapCreatorMaxCountException
 from .models import Roadmap, RoadmapStep as RoadmapStepModel, Tag, LearningResource
 from .config import LLMConfig
 from src.auth.service import UserService
@@ -166,12 +168,16 @@ class RoadmapService:
         Returns:
             Roadmap: 생성된 로드맵 정보
         """
+        if await cls._check_roadmap_creator(db, user_uid):
+            raise RoadmapCreatorMaxCountException("3개 이상의 로드맵 및 서브 로드맵을 생성할 수 없습니다.")
+
+
         current_date = datetime.now().strftime("%Y-%m-%d")
         user = UserService.find_user(db, user_uid)
         try:
             roadmap_result = await cls.roadmap_create_chain.ainvoke({
-                    "language" : "korean",
-                    "target_job" : target_job,
+                "language" : "korean",
+                "target_job" : target_job,
                 "user_background" : user.profile,
                 "user_instructions" : instruct,
                 "current_date" : current_date,
@@ -439,7 +445,7 @@ class RoadmapService:
 
 
     @classmethod
-    async def create_subroadmap(cls, db: Session, step_uid: str) -> str:
+    async def create_subroadmap(cls, db: Session, step_uid: str, current_user_uid: str) -> str:
         """서브 로드맵을 생성합니다.
         
         Args:
@@ -449,6 +455,10 @@ class RoadmapService:
         Returns:
             str: 생성된 서브 로드맵 UID
         """
+
+        if await cls._check_roadmap_creator(db, current_user_uid):
+            raise RoadmapCreatorMaxCountException("3개 이상의 로드맵 및 서브 로드맵을 생성할 수 없습니다.")
+
         step = db.query(RoadmapStepModel).filter(RoadmapStepModel.unique_id == step_uid).options(
             joinedload(RoadmapStepModel.roadmap)
         ).first()
@@ -537,3 +547,11 @@ class RoadmapService:
         db.delete(resource)
         db.commit()
         return True
+    
+    @classmethod
+    async def _check_roadmap_creator(cls, db: Session, current_user_uid: str) -> bool:
+        """로드맵 생성자가 서브로드맵을 포함해 3개의 로드맵 이상을 생성했는지 확인합니다."""
+        user_id = UserService.find_user(db=db, user_uid=current_user_uid).id
+        result = db.query(Roadmap).filter(Roadmap.user_id == user_id).count() >= 3
+
+        return result
