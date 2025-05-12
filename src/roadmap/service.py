@@ -117,6 +117,7 @@ class RoadmapService:
             )
             steps.append(step_detail)
 
+        steps.sort(key=lambda x: x.step)
         return RoadmapDetailSchema(
             id=roadmap.unique_id,
             title=roadmap.title,
