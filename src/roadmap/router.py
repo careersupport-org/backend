@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 from database import get_db
 from .schemas import (
@@ -15,13 +15,11 @@ from pydantic import BaseModel
 import logging
 from src.auth.models import KakaoUser
 from src.roadmap import service
-from .exceptions import RoadmapCreatorMaxCountException
+from .schemas import RoadmapAssistantUserInputSchema
 
 router = APIRouter(prefix="/roadmap", tags=["roadmap"])
 logger = logging.getLogger(__name__)
 
-class UserInputRequest(BaseModel):
-    user_input: str
 
 @router.get("/bookmarks", response_model=BookmarkedStepListResponse, responses={
     401: {"model": ErrorResponse, "description": "인증 오류"},
@@ -39,23 +37,9 @@ async def get_bookmarked_steps(
         
     Returns:
         BookmarkedStepListResponse: 북마크된 Step 목록
-        
-    Raises:
-        HTTPException: 인증되지 않은 경우 또는 서버 오류 발생 시
     """
-    try:
-        return RoadmapService.get_bookmarked_steps(db, current_user.uid)
-    except Exception as e:
-        # 예상치 못한 서버 오류만 500 에러로 처리
-        if not isinstance(e, HTTPException):
-            raise HTTPException(
-                status_code=500,
-                detail=ErrorResponse(
-                    code="500",
-                    detail=f"서버 오류: {str(e)}"
-                ).dict()
-            )
-        raise e
+    return RoadmapService.get_bookmarked_steps(db, current_user.uid)
+
 
 @router.get("", response_model=RoadmapListResponse, responses={
     401: {"model": ErrorResponse, "description": "인증 오류"},
@@ -73,21 +57,11 @@ async def get_roadmaps(
         
     Returns:
         RoadmapListResponse: 로드맵 목록
-        
-    Raises:
-        HTTPException: 인증되지 않은 경우 또는 서버 오류 발생 시
     """
-    try:
-        roadmaps = RoadmapService.get_user_roadmaps(db, current_user.uid)
-        return RoadmapListResponse(roadmaps=roadmaps)
-    except Exception as e:
-        raise HTTPException(
-            status_code=500,
-            detail=ErrorResponse(
-                code="500",
-                detail=f"서버 오류: {str(e)}"
-            ).dict()
-        )
+    roadmaps = RoadmapService.get_user_roadmaps(db, current_user.uid)
+    return RoadmapListResponse(roadmaps=roadmaps)
+
+
 
 @router.get("/{roadmap_uid}", response_model=RoadmapDetailSchema, responses={
     401: {"model": ErrorResponse, "description": "인증 오류"},
@@ -108,30 +82,10 @@ async def get_roadmap(
         
     Returns:
         RoadmapDetail: 로드맵 상세 정보
-        
-    Raises:
-        HTTPException: 인증되지 않은 경우, 로드맵을 찾을 수 없는 경우 또는 서버 오류 발생 시
     """
-    try:
-        roadmap = RoadmapService.get_roadmap_by_uid(db, roadmap_uid)
-        return roadmap
-    except Exception as e:
+    roadmap = RoadmapService.get_roadmap_by_uid(db, roadmap_uid)
+    return roadmap
 
-        if str(e) == "Roadmap not found":
-            raise HTTPException(
-                status_code=404,
-                detail=ErrorResponse(
-                    code="404",
-                    detail="로드맵을 찾을 수 없습니다."
-                ).dict()
-            )
-        raise HTTPException(
-            status_code=500,
-            detail=ErrorResponse(
-                code="500",
-                detail=f"서버 오류: {str(e)}"
-            ).dict()
-        )
 
 @router.get("/step/{step_uid}/resources", response_model=LearningResourceListSchema, responses={
     401: {"model": ErrorResponse, "description": "인증 오류"},
@@ -152,28 +106,10 @@ async def get_learning_resources(
         
     Returns:
         LearningResourceSchema: 추천된 학습 리소스 목록
-    Raises:
-        HTTPException: 인증되지 않은 경우, 로드맵 단계를 찾을 수 없는 경우 또는 서버 오류 발생 시
     """
-    try:
-        resources = await RoadmapService.recommend_learning_resources(db, step_uid)
-        return resources
-    except Exception as e:
-        if str(e) == "Roadmap step not found":
-            raise HTTPException(
-                status_code=404,
-                detail=ErrorResponse(
-                    code="404",
-                    detail="로드맵 단계를 찾을 수 없습니다."
-                ).dict()
-            )
-        raise HTTPException(
-            status_code=500,
-            detail=ErrorResponse(
-                code="500",
-                detail=f"서버 오류: {str(e)}"
-            ).dict()
-        )
+    resources = await RoadmapService.recommend_learning_resources(db, step_uid)
+    return resources
+
 
 @router.get("/step/{step_uid}/guide", responses={
     401: {"model": ErrorResponse, "description": "인증 오류"},
@@ -194,28 +130,10 @@ async def get_step_guide(
         
     Returns:
         StreamingResponse: SSE 스트리밍 응답
-        
-    Raises:
-        HTTPException: 인증되지 않은 경우, 로드맵 단계를 찾을 수 없는 경우 또는 서버 오류 발생 시
     """
-    try:
-        return await RoadmapService.get_step_guide(db, step_uid)
-    except Exception as e:
-        if str(e) == "Roadmap step not found":
-            raise HTTPException(
-                status_code=404,
-                detail=ErrorResponse(
-                    code="404",
-                    detail="로드맵 단계를 찾을 수 없습니다."
-                ).dict()
-            )
-        raise HTTPException(
-            status_code=500,
-            detail=ErrorResponse(
-                code="500",
-                detail=f"서버 오류: {str(e)}"
-            ).dict()
-        )
+    token_generator = RoadmapService.get_step_guide(db, step_uid)
+    return StreamingResponse(token_generator, media_type="text/event-stream")
+
 
 @router.post("", response_model=RoadmapResponse, responses={
     401: {"model": ErrorResponse, "description": "인증 오류"},
@@ -236,38 +154,18 @@ async def create_roadmap(
         
     Returns:
         RoadmapResponse: 생성된 로드맵 정보
-        
-    Raises:
-        HTTPException: 인증되지 않은 경우 또는 서버 오류 발생 시
     """
-    try:
-        # 로드맵 생성
-        generated_roadmap_id = await RoadmapService.create_roadmap(
-            db=db,
-            user_uid=current_user.uid,
-            target_job=roadmap_request.target_job,
-            instruct=roadmap_request.instruct
-        )
-        
-        return RoadmapResponse(
-            id=generated_roadmap_id
-        )
-    except RoadmapCreatorMaxCountException as e:
-        raise HTTPException(
-            status_code=400,
-            detail=ErrorResponse(
-                code="400",
-                detail=e.message
-            ).dict()
-        )
-    except Exception as e:
-        raise HTTPException(
-            status_code=500,
-            detail=ErrorResponse(
-                code="500",
-                detail=f"서버 오류: {str(e)}"
-            ).dict()
-        ) 
+    # 로드맵 생성
+    generated_roadmap_id = await RoadmapService.create_roadmap(
+        db=db,
+        user_uid=current_user.uid,
+        target_job=roadmap_request.target_job,
+        instruct=roadmap_request.instruct
+    )
+    
+    return RoadmapResponse(
+        id=generated_roadmap_id
+    )
 
 @router.post("/step/{step_uid}/bookmark", responses={
     401: {"model": ErrorResponse, "description": "인증 오류"},
@@ -289,38 +187,10 @@ async def toggle_bookmark(
         
     Returns:
         dict: 토글 후 북마크 상태
-        
-    Raises:
-        HTTPException: 인증되지 않은 경우, 권한이 없는 경우, 로드맵 단계를 찾을 수 없는 경우 또는 서버 오류 발생 시
     """
-    try:
-        is_bookmarked = RoadmapService.toggle_bookmark(db, step_uid, current_user.uid)
-        return {"is_bookmarked": is_bookmarked}
-    except Exception as e:
-        if str(e) == "Roadmap step not found":
-            raise HTTPException(
-                status_code=404,
-                detail=ErrorResponse(
-                    code="404",
-                    detail="로드맵 단계를 찾을 수 없습니다."
-                ).dict()
-            )
-        elif str(e) == "Permission denied":
-            raise HTTPException(
-                status_code=403,
-                detail=ErrorResponse(
-                    code="403",
-                    detail="북마크를 수정할 권한이 없습니다."
-                ).dict()
-            )
-        raise HTTPException(
-            status_code=500,
-            detail=ErrorResponse(
-                code="500",
-                detail=f"서버 오류: {str(e)}"
-            ).dict()
-        ) 
-    
+    is_bookmarked = RoadmapService.toggle_bookmark(db, step_uid, current_user.uid)
+    return {"is_bookmarked": is_bookmarked}
+
 
 @router.post("/{roadmap_uid}/assistant", responses={
     200: {"description": "로드맵 어시스턴트 응답"},
@@ -330,7 +200,7 @@ async def toggle_bookmark(
 })
 async def call_roadmap_assistant(
     roadmap_uid: str,
-    request: UserInputRequest,
+    request: RoadmapAssistantUserInputSchema,
     db: Session = Depends(get_db)
 ):
     """로드맵 어시스턴트를 호출합니다.
@@ -342,22 +212,14 @@ async def call_roadmap_assistant(
         
     Returns:
         StreamingResponse: 로드맵 어시스턴트 응답
-        
-    Raises:
-        HTTPException: 로드맵을 찾을 수 없는 경우
-        HTTPException: 서버 오류가 발생한 경우
     """
-    try:
-        return await RoadmapService.call_roadmap_assistant(
-            db=db,
-            roadmap_uid=roadmap_uid,
-            user_input=request.user_input
-        )
-    except Exception as e:
-        if isinstance(e, HTTPException):
-            raise e
-        logger.error(f"Error in call_roadmap_assistant: {str(e)}")
-        raise HTTPException(status_code=500, detail="서버 오류가 발생했습니다.")
+    assistant_generator = await RoadmapService.call_roadmap_assistant(
+        db=db,
+        roadmap_uid=roadmap_uid,
+        user_input=request.user_input
+    )
+    return StreamingResponse(assistant_generator, media_type="text/event-stream")
+
 
 @router.post("/step/{step_uid}/subroadmap", responses={
     200: {"description": "서브 로드맵 생성 성공"},
@@ -378,39 +240,11 @@ async def create_subroadmap(
         db (Session): 데이터베이스 세션
         
     Returns:
-        dict: 생성된 서브 로드맵 UID
-        
-    Raises:
-        HTTPException: 인증되지 않은 경우, 로드맵 단계를 찾을 수 없는 경우 또는 서버 오류 발생 시
+        RoadmapResponse: 생성된 서브 로드맵 UID
     """
-    try:
-        subroadmap_uid = await RoadmapService.create_subroadmap(db, step_uid, current_user.uid)
-        return {"subroadmap_uid": subroadmap_uid}
-    except RoadmapCreatorMaxCountException as e:
-        raise HTTPException(
-            status_code=400,
-            detail=ErrorResponse(
-                code="400",
-                detail=e.message
-            ).dict()
-        )
-    except Exception as e:
-        print(e)
-        if str(e) == "Roadmap step not found":
-            raise HTTPException(
-                status_code=404,
-                detail=ErrorResponse(
-                    code="404",
-                    detail="로드맵 단계를 찾을 수 없습니다."
-                ).dict()
-            )
-        raise HTTPException(
-            status_code=500,
-            detail=ErrorResponse(
-                code="500",
-                detail=f"서버 오류: {str(e)}"
-            ).dict()
-        )
+    subroadmap_uid = await RoadmapService.create_subroadmap(db, step_uid, current_user.uid)
+    return RoadmapResponse(id=subroadmap_uid)
+
 
 @router.post("/step/{step_id}/resources", response_model=LearningResourceSchema)
 async def add_learning_resource(
@@ -442,8 +276,5 @@ async def remove_learning_resource(
         current_user (UserDTO): 현재 인증된 사용자 정보
         db (Session): 데이터베이스 세션
     """
-    try:
-        await RoadmapService.remove_learning_resource(db, resource_uid)
-        return {"message": "학습 리소스 삭제 성공"}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail="서버 오류가 발생했습니다.")
+    await RoadmapService.remove_learning_resource(db, resource_uid)
+    return "ok"

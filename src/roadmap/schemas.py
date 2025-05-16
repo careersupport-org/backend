@@ -197,3 +197,7 @@ class BookmarkedStepListResponse(BaseModel):
                 ]
             }
         }
+
+
+class RoadmapAssistantUserInputSchema(BaseModel):
+    user_input: str
