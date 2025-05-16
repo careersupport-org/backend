@@ -139,7 +139,7 @@ class RoadmapService:
         Returns:
             list[RoadmapListItem]: 로드맵 목록
         """
-        user = UserService.find_user(db, user_uid)
+        user = UserService.get_user_by_uid(db, user_uid)
         roadmaps = db.query(Roadmap).filter(
             Roadmap.user_id == user.id,
             Roadmap.parent_step == None
@@ -173,7 +173,7 @@ class RoadmapService:
 
 
         current_date = datetime.now().strftime("%Y-%m-%d")
-        user = UserService.find_user(db, user_uid)
+        user = UserService.get_user_by_uid(db, user_uid)
         try:
             roadmap_result = await cls.roadmap_create_chain.ainvoke({
                 "language" : "korean",
@@ -342,7 +342,7 @@ class RoadmapService:
             raise Exception("Roadmap step not found")
 
         # 로드맵 생성자 확인
-        roadmap_creator = UserService.find_user(db, step.roadmap.user.unique_id)
+        roadmap_creator = UserService.get_user_by_uid(db, step.roadmap.user.unique_id)
         if roadmap_creator.unique_id != current_user_uid:
             raise Exception("Permission denied")
 
@@ -551,7 +551,7 @@ class RoadmapService:
     @classmethod
     async def _check_roadmap_creator(cls, db: Session, current_user_uid: str) -> bool:
         """로드맵 생성자가 서브로드맵을 포함해 3개의 로드맵 이상을 생성했는지 확인합니다."""
-        user_id = UserService.find_user(db=db, user_uid=current_user_uid).id
+        user_id = UserService.get_user_by_uid(db=db, user_uid=current_user_uid).id
         result = db.query(Roadmap).filter(Roadmap.user_id == user_id).count() >= 3
 
         return result

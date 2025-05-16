@@ -253,7 +253,7 @@ def test_find_user_success(db_session):
     db_session.commit()
 
     # When
-    found_user = UserService.find_user(db_session, "test_uid_1")
+    found_user = UserService.get_user_by_uid(db_session, "test_uid_1")
 
     # Then
     assert found_user is not None
@@ -272,7 +272,7 @@ def test_find_user_profile_not_found(db_session):
 
     # When & Then
     with pytest.raises(UserNotFoundError) as exc_info:
-        UserService.find_user(db_session, non_existent_uid)
+        UserService.get_user_by_uid(db_session, non_existent_uid)
     
 def test_find_user_profile_empty_db(db_session):
     """빈 데이터베이스에서 사용자 프로필 조회 테스트"""
@@ -281,6 +281,6 @@ def test_find_user_profile_empty_db(db_session):
 
     # When & Then
     with pytest.raises(UserNotFoundError) as exc_info:
-        UserService.find_user(db_session, test_uid)
+        UserService.get_user_by_uid(db_session, test_uid)
     db_session.query(KakaoUser).delete()
     db_session.commit()
