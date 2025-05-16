@@ -6,7 +6,7 @@ from .config import LLMConfig
 from src.auth.service import UserService
 from src.auth.models import KakaoUser
 from datetime import datetime
-from common.exceptions import ModelInvocationException, EntityNotFoundException, ForbiddenException
+from src.common.exceptions import ModelInvocationException, EntityNotFoundException, ForbiddenException
 import nanoid
 import logging
 import traceback

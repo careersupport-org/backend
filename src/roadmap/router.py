@@ -8,13 +8,11 @@ from .schemas import (
     LearningResourceCreateResponse, LearningResourceSchema
 )
 from .service import RoadmapService
-from src.auth.router import get_current_user_from_token
+from src.auth.router import get_current_user
 from src.auth.dtos import UserDTO
 from fastapi.responses import StreamingResponse
-from pydantic import BaseModel
 import logging
 from src.auth.models import KakaoUser
-from src.roadmap import service
 from .schemas import RoadmapAssistantUserInputSchema
 
 router = APIRouter(prefix="/roadmap", tags=["roadmap"])
@@ -26,7 +24,7 @@ logger = logging.getLogger(__name__)
     500: {"model": ErrorResponse, "description": "서버 오류"}
 })
 async def get_bookmarked_steps(
-    current_user: UserDTO = Depends(get_current_user_from_token),
+    current_user: UserDTO = Depends(get_current_user),
     db: Session = Depends(get_db)
 ) -> BookmarkedStepListResponse:
     """사용자의 북마크된 Step 목록을 조회합니다.
@@ -46,7 +44,7 @@ async def get_bookmarked_steps(
     500: {"model": ErrorResponse, "description": "서버 오류"}
 })
 async def get_roadmaps(
-    current_user: UserDTO = Depends(get_current_user_from_token),
+    current_user: UserDTO = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     """사용자의 로드맵 목록을 조회합니다.
@@ -70,7 +68,7 @@ async def get_roadmaps(
 })
 async def get_roadmap(
     roadmap_uid: str,
-    current_user: UserDTO = Depends(get_current_user_from_token),
+    current_user: UserDTO = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     """로드맵 상세 정보를 조회합니다.
@@ -94,7 +92,7 @@ async def get_roadmap(
 })
 async def get_learning_resources(
     step_uid: str,
-    current_user: UserDTO = Depends(get_current_user_from_token),
+    current_user: UserDTO = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     """로드맵 단계에 대한 학습 리소스를 추천합니다.
@@ -118,7 +116,7 @@ async def get_learning_resources(
 })
 async def get_step_guide(
     step_uid: str,
-    current_user: UserDTO = Depends(get_current_user_from_token),
+    current_user: UserDTO = Depends(get_current_user),
     db: Session = Depends(get_db)
 ) -> StreamingResponse:
     """로드맵 단계에 대한 상세 가이드를 스트리밍합니다.
@@ -142,7 +140,7 @@ async def get_step_guide(
 })
 async def create_roadmap(
     roadmap_request: RoadmapCreateRequest,
-    current_user: UserDTO = Depends(get_current_user_from_token),
+    current_user: UserDTO = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     """로드맵을 생성합니다.
@@ -175,7 +173,7 @@ async def create_roadmap(
 })
 async def toggle_bookmark(
     step_uid: str,
-    current_user: UserDTO = Depends(get_current_user_from_token),
+    current_user: UserDTO = Depends(get_current_user),
     db: Session = Depends(get_db)
 ) -> dict:
     """로드맵 단계의 북마크 상태를 토글합니다.
@@ -229,7 +227,7 @@ async def call_roadmap_assistant(
 })
 async def create_subroadmap(
     step_uid: str,
-    current_user: UserDTO = Depends(get_current_user_from_token),
+    current_user: UserDTO = Depends(get_current_user),
     db: Session = Depends(get_db)
 ) -> dict:
     """로드맵 단계에 대한 서브 로드맵을 생성합니다.
@@ -251,7 +249,7 @@ async def add_learning_resource(
     step_id: str,
     resource: LearningResourceCreateResponse,
     db: Session = Depends(get_db),
-    current_user: KakaoUser = Depends(get_current_user_from_token)
+    current_user: KakaoUser = Depends(get_current_user)
 ):
     """
     로드맵 단계에 학습 리소스를 추가합니다.
@@ -266,7 +264,7 @@ async def add_learning_resource(
 })
 async def remove_learning_resource(
     resource_uid: str,
-    current_user: UserDTO = Depends(get_current_user_from_token),
+    current_user: UserDTO = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     """학습 리소스를 삭제합니다.
