@@ -41,7 +41,7 @@ class RoadmapStep(Base):
     roadmap = relationship("Roadmap", back_populates="steps", foreign_keys=[roadmap_id])
     sub_roadmap = relationship("Roadmap", back_populates="parent_step", foreign_keys=[sub_roadmap_uid])
     tags = relationship("Tag", back_populates="step", cascade="all, delete-orphan")
-    learning_resources = relationship("LearningResource", back_populates="step")
+    learning_resources = relationship("LearningResource", back_populates="step", cascade="all, delete-orphan")
 
     def __repr__(self):
         return f"<RoadmapStep(id={self.id}, step={self.step}, title={self.title})>"
