@@ -2,7 +2,7 @@ import pytest
 from datetime import datetime, timedelta, UTC
 import jwt
 from src.auth.utils import create_access_token, verify_token, SECRET_KEY, ALGORITHM
-from src.auth.exceptions import TokenExpiredError, InvalidTokenError, TokenDecodeError
+from src.auth.exceptions import TokenExpiredException, InvalidTokenException, TokenDecodingException
 
 @pytest.fixture
 def test_data():
@@ -73,7 +73,7 @@ def test_verify_token_expired():
     )
     
     # When & Then: 만료된 토큰 검증 시도 시 예외 발생
-    with pytest.raises(TokenExpiredError):
+    with pytest.raises(TokenExpiredException):
         verify_token(token)
 
 def test_verify_token_invalid():
@@ -86,7 +86,7 @@ def test_verify_token_invalid():
     )
     
     # When & Then: 잘못된 토큰 검증 시도 시 예외 발생
-    with pytest.raises(InvalidTokenError):
+    with pytest.raises(InvalidTokenException):
         verify_token(invalid_token)
 
 def test_verify_token_malformed():
@@ -95,7 +95,7 @@ def test_verify_token_malformed():
     malformed_token = "not.a.valid.jwt.token"
     
     # When & Then: 잘못된 형식의 토큰 검증 시도 시 예외 발생
-    with pytest.raises(InvalidTokenError):
+    with pytest.raises(InvalidTokenException):
         verify_token(malformed_token)
 
 def test_create_access_token_with_empty_data():

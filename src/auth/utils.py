@@ -2,7 +2,7 @@ from datetime import datetime, timedelta, UTC
 from typing import Optional
 import jwt
 import os
-from .exceptions import TokenExpiredError, InvalidTokenError, TokenDecodeError
+from .exceptions import TokenExpiredException, InvalidTokenException, TokenDecodingException
 from .dtos import UserDTO
 
 
@@ -14,7 +14,7 @@ ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24 * 7  # 7일
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
     if not SECRET_KEY:
-        raise TokenDecodeError()
+        raise TokenDecodingException()
         
     to_encode = data.copy()
     if expires_delta:
@@ -27,9 +27,9 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
         encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
         return encoded_jwt
     except jwt.PyJWTError as e:
-        raise TokenDecodeError()
+        raise TokenDecodingException()
     except Exception as e:
-        raise TokenDecodeError()
+        raise TokenDecodingException()
 
 def verify_token(token: str) -> UserDTO:
     """JWT 토큰을 검증하고 사용자 정보를 반환합니다.
@@ -46,7 +46,7 @@ def verify_token(token: str) -> UserDTO:
         TokenDecodeError: 토큰 디코딩 중 오류가 발생한 경우
     """
     if not SECRET_KEY:
-        raise TokenDecodeError()
+        raise TokenDecodingException()
         
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
@@ -56,9 +56,9 @@ def verify_token(token: str) -> UserDTO:
             profile_image=payload.get("profile_image")
         )
     except jwt.ExpiredSignatureError:
-        raise TokenExpiredError()
+        raise TokenExpiredException()
     except jwt.InvalidTokenError:
-        raise InvalidTokenError()
+        raise InvalidTokenException()
     except Exception as e:
-        raise TokenDecodeError() 
+        raise TokenDecodingException() 
     
