@@ -6,7 +6,7 @@ from src.common.exceptions import EntityNotFoundException, UnauthorizedException
 from typing import Optional
 import os
 from sqlalchemy import select
-
+from src.auth.dtos import UserDTO
 default_profile_image_url = os.getenv("DEFAULT_PROFILE_IMAGE_URL")
 
 class UserService:
@@ -59,7 +59,7 @@ class UserService:
         return user
     
     @staticmethod
-    def create_or_update_user(db: Session, kakao_id: int, nickname: str, profile_image: Optional[str] = None) -> KakaoUser:
+    def create_or_update_user(db: Session, kakao_id: int, nickname: str, profile_image: Optional[str] = None) -> UserDTO:
         """
         사용자 정보를 생성하거나 업데이트합니다.
         사용자가 존재하지 않으면 생성하고, 존재하면 업데이트합니다.
@@ -71,7 +71,7 @@ class UserService:
             profile_image (str): 프로필 이미지
 
         Returns:
-            KakaoUser: 사용자 정보
+            UserDTO: 사용자 정보
         """
 
         stmt = (
@@ -97,7 +97,11 @@ class UserService:
             db.add(user)
         
         db.commit()
-        return user
+        return UserDTO(
+            uid=user.unique_id,
+            nickname=user.nickname,
+            profile_image=user.profile_image
+        )
 
     @staticmethod
     def update_user_profile(db: Session, user_uid: str, profile: str) -> KakaoUser:

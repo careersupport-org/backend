@@ -67,8 +67,8 @@ async def kakao_callback(code: str, db: Session = Depends(get_db)):
         
         # JWT 토큰 생성
         token_data = {
-            "sub": user.unique_id,
-            "kakao_id": str(user.kakao_id),
+            "sub": user.uid,
+            "profile_image": user.profile_image,
             "nickname": user.nickname
         }
         access_token = create_access_token(data=token_data)
@@ -77,7 +77,7 @@ async def kakao_callback(code: str, db: Session = Depends(get_db)):
             code="200",
             access_token=access_token,
             token_type="bearer",
-            user_id=user.unique_id,
+            user_id=user.uid,
             nickname=user.nickname,
             profile_image=user.profile_image
         )
