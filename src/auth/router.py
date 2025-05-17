@@ -20,6 +20,7 @@ router = APIRouter(prefix="/oauth", tags=["oauth"])
 KAKAO_CLIENT_ID = os.getenv("KAKAO_CLIENT_ID")
 KAKAO_CLIENT_SECRET = os.getenv("KAKAO_CLIENT_SECRET")
 KAKAO_REDIRECT_URI = os.getenv("KAKAO_REDIRECT_URI")
+default_profile_image_url = os.getenv("DEFAULT_PROFILE_IMAGE_URL")
 
 @router.get("/kakao/login")
 async def kakao_login():
@@ -63,7 +64,7 @@ async def kakao_callback(code: str, db: Session = Depends(get_db)):
             db,
             user_data["id"],
             user_data["properties"]["nickname"],
-            user_data["properties"]["profile_image"]
+            user_data["properties"]["profile_image"] or default_profile_image_url
         )
         
         # JWT 토큰 생성

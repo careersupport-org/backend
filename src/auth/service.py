@@ -7,7 +7,6 @@ from typing import Optional
 import os
 from sqlalchemy import select
 from src.auth.dtos import UserDTO
-default_profile_image_url = os.getenv("DEFAULT_PROFILE_IMAGE_URL")
 
 class UserService:
     @staticmethod
@@ -77,7 +76,7 @@ class UserService:
         if user:
             # 기존 사용자 정보 업데이트
             user.nickname = nickname
-            user.profile_image = profile_image or default_profile_image_url
+            user.profile_image = profile_image
             user.last_logined_at = datetime.now(UTC)
         else:
             # 새 사용자 생성
@@ -85,7 +84,7 @@ class UserService:
                 kakao_id=kakao_id,
                 unique_id=nanoid.generate(size=10),
                 nickname=nickname,
-                profile_image=profile_image or default_profile_image_url
+                profile_image=profile_image
             )
             db.add(user)
         
