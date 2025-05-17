@@ -11,7 +11,7 @@ class RoadmapCreateRequest(BaseModel):
     )
     instruct: str = Field(
         description="로드맵 생성 지시사항",
-        min_length=1,
+        min_length=0,
         max_length=1000
     )
 
