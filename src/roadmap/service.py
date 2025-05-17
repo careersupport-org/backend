@@ -73,7 +73,7 @@ class RoadmapService:
                 "language": "korean"
             })
         except Exception as e:
-            raise ModelInvocationException("학습 리소스 생성 중 오류가 발생했습니다.")
+            raise ModelInvocationException("학습 리소스 생성 중 오류가 발생했습니다.", e)
         
         result_list = []
         
@@ -247,7 +247,7 @@ class RoadmapService:
                 yield f"data: {json.dumps({'token': chunk})}\n\n"
 
         if step.guide:
-            return generate_guide_in_db
+            return generate_guide_in_db()
 
         # 토큰을 저장할 공유 객체
         collected_tokens = []
@@ -255,7 +255,6 @@ class RoadmapService:
         # 스트리밍이 완료된 후 작업할 이벤트
         streaming_completed = asyncio.Event()
         
-
         # 백그라운드 태스크 시작
         save_task = asyncio.create_task(
             cls._wait_and_save_guide(streaming_completed, collected_tokens, step_uid)
@@ -280,8 +279,7 @@ class RoadmapService:
                 streaming_completed.set()
                 cls.logger.error(f"Error in streaming: {str(e)}")
                 yield f"data: {json.dumps({'error': str(e)})}\n\n"
-
-        return generate
+        return generate()
         
 
     @classmethod
@@ -382,7 +380,7 @@ class RoadmapService:
                 cls.logger.error(f"Error in call_roadmap_assistant: {str(e)}")
                 yield f"data: {json.dumps({'error': str(e)})}\n\n"
 
-        return generate
+        return generate()
 
 
 

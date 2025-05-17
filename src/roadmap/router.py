@@ -129,7 +129,7 @@ async def get_step_guide(
     Returns:
         StreamingResponse: SSE 스트리밍 응답
     """
-    token_generator = RoadmapService.get_step_guide(db, step_uid)
+    token_generator = await RoadmapService.get_step_guide(db, step_uid)
     return StreamingResponse(token_generator, media_type="text/event-stream")
 
 

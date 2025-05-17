@@ -2,9 +2,9 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from src.auth.router import router as auth_router
 from src.roadmap.router import router as roadmap_router
-from database import Base, engine, init_db
+from database import init_db
 from src.auth.models import KakaoUser
-from src.common.exceptions import UnauthorizedException, EntityNotFoundException, ForbiddenException
+from src.common.exceptions import UnauthorizedException, EntityNotFoundException, ForbiddenException, ModelInvocationException
 from src.auth.exceptions import JWTException
 from src.roadmap.exceptions import RoadmapCreatorMaxCountException
 from src.common.exception_router import (
@@ -13,7 +13,8 @@ from src.common.exception_router import (
     jwt_exception_handler,
     forbidden_exception_handler,
     entity_not_found_exception_handler,
-    general_exception_handler
+    general_exception_handler,
+    model_invocation_exception_handler
 )
 from dotenv import load_dotenv
 import logging
@@ -47,7 +48,7 @@ app.add_exception_handler(JWTException, jwt_exception_handler)
 app.add_exception_handler(ForbiddenException, forbidden_exception_handler)
 app.add_exception_handler(EntityNotFoundException, entity_not_found_exception_handler)
 app.add_exception_handler(Exception, general_exception_handler)
-
+app.add_exception_handler(ModelInvocationException, model_invocation_exception_handler)
 if os.getenv("RUNNING_ENVIRONMENT") == "development":
     logger.info("Initializing database...")
     init_db()
