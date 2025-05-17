@@ -4,6 +4,8 @@ from sqlalchemy.orm import sessionmaker
 import oracledb
 import os
 
+Base = declarative_base()
+
 def create_production_engine():
     engine = create_engine(
         "oracle+oracledb://",
@@ -23,9 +25,8 @@ def oracle_connection_factory():
 
 
 def create_development_engine():
-    engine = create_engine("sqlite://", echo=True)
+    engine = create_engine("sqlite://", echo=True, connect_args={"check_same_thread": False})
     return engine
-
 
 if os.getenv("RUNNING_ENVIRONMENT") == "development":
     engine = create_development_engine()
@@ -34,9 +35,6 @@ else:
 
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-
-Base = declarative_base()
-
 
 def init_db():
     Base.metadata.create_all(bind=engine)
