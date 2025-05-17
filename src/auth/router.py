@@ -56,7 +56,7 @@ async def kakao_callback(code: str, db: Session = Depends(get_db)):
         user_response = await client.get(user_info_url, headers=headers)
         user_response.raise_for_status()
         user_data = user_response.json()
-        
+
         # 사용자 정보 저장 또는 업데이트
         user = UserService.create_or_update_user(
             db,

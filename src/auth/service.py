@@ -74,12 +74,8 @@ class UserService:
             UserDTO: 사용자 정보
         """
 
-        stmt = (
-            select(KakaoUser)
-            .where(KakaoUser.kakao_id == kakao_id)
-        )
 
-        user = db.execute(stmt).one_or_none()
+        user = db.query(KakaoUser).filter(KakaoUser.kakao_id == kakao_id).first()
 
         if user:
             # 기존 사용자 정보 업데이트
@@ -119,12 +115,8 @@ class UserService:
             UnauthorizedException: 사용자를 찾을 수 없는 경우
         """
 
-        stmt = (
-            select(KakaoUser)
-            .where(KakaoUser.unique_id == user_uid)
-        )
 
-        user = db.execute(stmt).one_or_none()
+        user = db.query(KakaoUser).filter(KakaoUser.unique_id == user_uid).first()
         if not user:
             raise UnauthorizedException("User not found")
             
