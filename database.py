@@ -27,7 +27,7 @@ def create_development_engine():
     return engine
 
 
-if os.getenv("ENVIRONMENT") == "development":
+if os.getenv("RUNNING_ENVIRONMENT") == "development":
     engine = create_development_engine()
 else:
     engine = create_production_engine()
@@ -41,7 +41,7 @@ Base = declarative_base()
 def init_db():
     Base.metadata.create_all(bind=engine)
 
-if os.getenv("ENVIRONMENT") == "development":
+if os.getenv("RUNNING_ENVIRONMENT") == "development":
     init_db()
 
 # DB 세션 의존성
