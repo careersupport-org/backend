@@ -9,7 +9,6 @@ from datetime import datetime
 from src.common.exceptions import ModelInvocationException, EntityNotFoundException, ForbiddenException
 import nanoid
 import logging
-import traceback
 from .schemas import (
     RoadmapListItemSchema, RoadmapDetailSchema, RoadmapStepSchema,
      LearningResourceSchema, LearningResourceListSchema, BookmarkedStepListResponse,
@@ -18,6 +17,7 @@ from .schemas import (
 from fastapi.responses import StreamingResponse
 import json
 import asyncio
+from src.roadmap.models import RoadmapStep as RoadmapStepModel, Roadmap as RoadmapModel
 
 class RoadmapService:
     roadmap_create_chain = LLMConfig.get_roadmap_create_llm()
@@ -91,7 +91,7 @@ class RoadmapService:
         return LearningResourceListSchema(resources=result_list)
 
     @classmethod
-    def get_roadmap_by_uid(cls, db: Session, roadmap_uid: str, current_user_uid: str) -> RoadmapDetailSchema:
+    def get_roadmap_by_uid(cls, db: Session, roadmap_uid: str) -> RoadmapDetailSchema:
         """로드맵 상세 정보를 조회합니다.
         
         Args:
@@ -111,8 +111,7 @@ class RoadmapService:
 
         if not roadmap:
             raise EntityNotFoundException("로드맵을 찾을 수 없습니다.")
-        if roadmap.user_id != current_user_uid:
-            raise ForbiddenException("로드맵을 조회할 권한이 없습니다.")
+
 
         steps = []
         for step in roadmap.steps:
@@ -332,12 +331,13 @@ class RoadmapService:
             BookmarkedStepListResponse: 북마크된 Step 목록
         """
         # 사용자의 로드맵에서 북마크된 Step 조회
-        bookmarked_steps = db.query(RoadmapStepModel).options(
-            joinedload(RoadmapStepModel.roadmap),
-            joinedload(RoadmapStepModel.roadmap.user)
+        bookmarked_steps = db.query(RoadmapStepModel).join(
+            RoadmapStepModel.roadmap
+        ).join(
+            RoadmapModel.user
         ).filter(
             RoadmapStepModel.is_bookmarked == True,
-            RoadmapStepModel.roadmap.user.unique_id == user_uid
+            KakaoUser.unique_id == user_uid
         ).all()
 
         # 응답 형식으로 변환

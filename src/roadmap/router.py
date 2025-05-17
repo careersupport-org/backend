@@ -8,7 +8,7 @@ from .schemas import (
     LearningResourceCreateResponse, LearningResourceSchema
 )
 from .service import RoadmapService
-from src.auth.router import get_current_user
+from src.auth.context import get_current_user
 from src.auth.dtos import UserDTO
 from fastapi.responses import StreamingResponse
 import logging

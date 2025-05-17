@@ -11,7 +11,7 @@ from .utils import create_access_token, verify_token
 from .schemas import LoginResponse, ErrorResponse, UserInfoSchema, ProfileUpdateRequest, UserProfileSchema
 from .dtos import UserDTO
 from src.common.exceptions import UnauthorizedException
-from .context import get_current_user
+from .context import get_current_user as get_current_user_from_token
 
 router = APIRouter(prefix="/oauth", tags=["oauth"])
 
@@ -87,7 +87,7 @@ async def kakao_callback(code: str, db: Session = Depends(get_db)):
     401: {"model": ErrorResponse, "description": "인증 오류"}
 })
 async def get_current_user(
-    current_user: UserDTO = Depends(get_current_user)
+    current_user: UserDTO = Depends(get_current_user_from_token)
 ):
     """현재 인증된 사용자 정보 반환(토큰 추출)
     
@@ -112,7 +112,7 @@ async def get_current_user(
 })
 async def update_profile(
     profile_update: ProfileUpdateRequest,
-    current_user: UserDTO = Depends(get_current_user),
+    current_user: UserDTO = Depends(get_current_user_from_token),
     db: Session = Depends(get_db)
 ):
     """사용자 프로필을 업데이트합니다.
@@ -142,7 +142,7 @@ async def update_profile(
     404: {"model": ErrorResponse, "description": "사용자를 찾을 수 없음"}
 })
 async def get_my_profile(
-    current_user: UserDTO = Depends(get_current_user),
+    current_user: UserDTO = Depends(get_current_user_from_token),
     db: Session = Depends(get_db)
 ):
     """현재 인증된 사용자의 프로필 정보를 반환합니다.
