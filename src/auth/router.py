@@ -59,12 +59,14 @@ async def kakao_callback(code: str, db: Session = Depends(get_db)):
         user_response.raise_for_status()
         user_data = user_response.json()
 
+        
+
         # 사용자 정보 저장 또는 업데이트
         user = UserService.create_or_update_user(
             db,
             user_data["id"],
-            user_data["properties"]["nickname"],
-            user_data["properties"]["profile_image"] or default_profile_image_url
+            user_data.get("properties", {}).get("nickname", "익명의 개발자"),
+            user_data.get("properties", {}).get("profile_image") or default_profile_image_url
         )
         
         # JWT 토큰 생성
