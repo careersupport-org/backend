@@ -11,6 +11,7 @@ from .utils import create_access_token, verify_token
 from .schemas import LoginResponse, ErrorResponse, UserInfoSchema, ProfileUpdateRequest, UserProfileSchema
 from .dtos import UserDTO
 from src.common.exceptions import UnauthorizedException
+from src.common.schemas import OkResponse
 from .context import get_current_user as get_current_user_from_token
 
 router = APIRouter(prefix="/oauth", tags=["oauth"])
@@ -106,15 +107,15 @@ async def get_current_user(
         profile_image=current_user.profile_image
     )
 
-@router.put("/me/profile", response_model=UserInfoSchema, responses={
+@router.put("/me/profile", response_model=OkResponse, responses={
     401: {"model": ErrorResponse, "description": "인증 오류"},
     404: {"model": ErrorResponse, "description": "사용자를 찾을 수 없음"}
 })
-async def update_profile(
+def update_profile(
     profile_update: ProfileUpdateRequest,
     current_user: UserDTO = Depends(get_current_user_from_token),
     db: Session = Depends(get_db)
-):
+)-> dict:
     """사용자 프로필을 업데이트합니다.
     
     Args:
@@ -123,18 +124,14 @@ async def update_profile(
         db (Session): 데이터베이스 세션
         
     Returns:
-        UserInfo: 업데이트된 사용자 정보
+        str: ok
         
     Raises:
         UnauthorizedException: 인증되지 않은 경우
     """
 
-    user = UserService.update_user_profile(db, current_user.uid, profile_update.profile)
-    return UserInfoSchema(
-        id=user.unique_id,
-        nickname=user.nickname,
-        profile_image=user.profile_image
-    )
+    UserService.update_user_profile(db, current_user.uid, profile_update.profile)
+    return OkResponse()
 
 
 @router.get("/me/profile", response_model=UserProfileSchema, responses={

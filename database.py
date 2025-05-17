@@ -25,7 +25,7 @@ def oracle_connection_factory():
 
 
 def create_development_engine():
-    engine = create_engine("sqlite://", echo=True, connect_args={"check_same_thread": False})
+    engine = create_engine("sqlite:///./dev.db", echo=True, connect_args={"check_same_thread": False})
     return engine
 
 if os.getenv("RUNNING_ENVIRONMENT") == "development":

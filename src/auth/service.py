@@ -97,7 +97,7 @@ class UserService:
         )
 
     @staticmethod
-    def update_user_profile(db: Session, user_uid: str, profile: str) -> KakaoUser:
+    def update_user_profile(db: Session, user_uid: str, profile: str) -> str:
         """사용자 프로필을 업데이트합니다.
         
         Args:
@@ -106,7 +106,7 @@ class UserService:
             profile (str): 업데이트할 프로필 내용
             
         Returns:
-            KakaoUser: 업데이트된 사용자 정보
+            str: ok
             
         Raises:
             UnauthorizedException: 사용자를 찾을 수 없는 경우

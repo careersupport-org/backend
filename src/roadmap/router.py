@@ -229,7 +229,7 @@ async def create_subroadmap(
     step_uid: str,
     current_user: UserDTO = Depends(get_current_user),
     db: Session = Depends(get_db)
-) -> dict:
+) -> RoadmapResponse:
     """로드맵 단계에 대한 서브 로드맵을 생성합니다.
     
     Args:
