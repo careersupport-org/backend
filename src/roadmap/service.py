@@ -460,11 +460,6 @@ class RoadmapService:
         )
 
         step.sub_roadmap_uid = subroadmap.unique_id
-        
-        db.execute(roadmap_subroadmap.insert().values(
-            roadmap_uid=roadmap.unique_id,
-            subroadmap_uid=subroadmap.unique_id
-        ))
 
         db.add(step)
         db.add(subroadmap)
@@ -480,7 +475,11 @@ class RoadmapService:
             subroadmap.steps.append(step)
 
         db.commit()
-
+        
+        db.execute(roadmap_subroadmap.insert().values(
+            roadmap_uid=roadmap.unique_id,
+            subroadmap_uid=subroadmap.unique_id
+        ))
         return subroadmap.unique_id
 
     @classmethod
