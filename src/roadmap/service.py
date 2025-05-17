@@ -17,7 +17,7 @@ from .schemas import (
 from fastapi.responses import StreamingResponse
 import json
 import asyncio
-from src.roadmap.models import RoadmapStep as RoadmapStepModel, Roadmap as RoadmapModel
+from src.roadmap.models import RoadmapStep as RoadmapStepModel, Roadmap as RoadmapModel, roadmap_subroadmap
 
 class RoadmapService:
     roadmap_create_chain = LLMConfig.get_roadmap_create_llm()
@@ -220,6 +220,40 @@ class RoadmapService:
         return roadmap.unique_id
     
 
+    @classmethod
+    def delete_roadmap(cls, db: Session, roadmap_uid: str, current_user_uid: str):
+        """로드맵을 삭제합니다.
+        """
+        roadmap = db.query(Roadmap).filter(Roadmap.unique_id == roadmap_uid).first()
+        user = UserService.get_user_by_uid(db, current_user_uid)
+        if not roadmap:
+            raise EntityNotFoundException("로드맵을 찾을 수 없습니다.")
+        
+        if roadmap.user_id != user.id:
+            raise ForbiddenException("로드맵을 삭제할 권한이 없습니다.")
+
+        # 서브로드맵 관계 조회
+        subroadmap_uids = db.execute(
+            select(roadmap_subroadmap.c.subroadmap_uid).where(
+                roadmap_subroadmap.c.roadmap_uid == roadmap.unique_id
+            )
+        ).scalars().all()
+
+        # 서브로드맵 삭제
+        if subroadmap_uids:
+            db.query(Roadmap).filter(Roadmap.unique_id.in_(subroadmap_uids)).delete(synchronize_session=False)
+
+        # 서브로드맵 관계 삭제
+        db.execute(
+            roadmap_subroadmap.delete().where(
+                (roadmap_subroadmap.c.roadmap_uid == roadmap.unique_id) |
+                (roadmap_subroadmap.c.subroadmap_uid == roadmap.unique_id)
+            )
+        )
+
+        # 로드맵 삭제
+        db.delete(roadmap)
+        db.commit()
 
     @classmethod
     async def get_step_guide(cls, db: Session, step_uid: str):
@@ -426,6 +460,12 @@ class RoadmapService:
         )
 
         step.sub_roadmap_uid = subroadmap.unique_id
+        
+        db.execute(roadmap_subroadmap.insert().values(
+            roadmap_uid=roadmap.unique_id,
+            subroadmap_uid=subroadmap.unique_id
+        ))
+
         db.add(step)
         db.add(subroadmap)
 

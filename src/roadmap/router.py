@@ -14,6 +14,8 @@ from fastapi.responses import StreamingResponse
 import logging
 from src.auth.models import KakaoUser
 from .schemas import RoadmapAssistantUserInputSchema
+from src.common.schemas import OkResponse
+
 
 router = APIRouter(prefix="/roadmap", tags=["roadmap"])
 logger = logging.getLogger(__name__)
@@ -164,6 +166,24 @@ async def create_roadmap(
     return RoadmapResponse(
         id=generated_roadmap_id
     )
+
+
+@router.delete("/{roadmap_uid}", response_model=OkResponse, responses={
+    401: {"model": ErrorResponse, "description": "인증 오류"},
+    403: {"model": ErrorResponse, "description": "권한 없음"},
+    404: {"model": ErrorResponse, "description": "로드맵을 찾을 수 없음"},
+    500: {"model": ErrorResponse, "description": "서버 오류"}
+})
+def delete_roadmap(
+    roadmap_uid: str,
+    current_user: UserDTO = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """로드맵을 삭제합니다.
+    """
+    RoadmapService.delete_roadmap(db, roadmap_uid, current_user.uid)
+    return OkResponse()
+
 
 @router.post("/step/{step_uid}/bookmark", responses={
     401: {"model": ErrorResponse, "description": "인증 오류"},

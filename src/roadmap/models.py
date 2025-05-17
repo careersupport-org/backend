@@ -1,8 +1,17 @@
-from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Boolean
+from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Boolean, Table
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from database import Base
 import nanoid
+
+# Roadmap과 Subroadmap의 관계를 저장하는 테이블
+roadmap_subroadmap = Table(
+    'roadmap_subroadmaps',
+    Base.metadata,
+    Column('roadmap_uid', String(10), ForeignKey('roadmaps.unique_id'), primary_key=True),
+    Column('subroadmap_uid', String(10), ForeignKey('roadmaps.unique_id'), primary_key=True),
+    Column('created_at', DateTime(timezone=True), server_default=func.now(), nullable=False)
+)
 
 class Roadmap(Base):
     """로드맵 모델"""
@@ -19,6 +28,7 @@ class Roadmap(Base):
     steps = relationship("RoadmapStep", back_populates="roadmap", cascade="all, delete-orphan", foreign_keys="RoadmapStep.roadmap_id")
     parent_step = relationship("RoadmapStep", back_populates="sub_roadmap", foreign_keys="RoadmapStep.sub_roadmap_uid")
     user = relationship("KakaoUser", back_populates="roadmaps")
+    
 
     def __repr__(self):
         return f"<Roadmap(id={self.id}, title={self.title})>"
