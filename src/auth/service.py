@@ -59,7 +59,7 @@ class UserService:
         return user
     
     @staticmethod
-    def create_or_update_user(db: Session, kakao_id: int, nickname: str, profile_image: Optional[str] = None) -> str:
+    def create_or_update_user(db: Session, kakao_id: int, nickname: str, profile_image: Optional[str] = None) -> KakaoUser:
         """
         사용자 정보를 생성하거나 업데이트합니다.
         사용자가 존재하지 않으면 생성하고, 존재하면 업데이트합니다.
@@ -71,7 +71,7 @@ class UserService:
             profile_image (str): 프로필 이미지
 
         Returns:
-            str: "ok"
+            KakaoUser: 사용자 정보
         """
 
         stmt = (
@@ -97,7 +97,7 @@ class UserService:
             db.add(user)
         
         db.commit()
-        return "ok"
+        return user
 
     @staticmethod
     def update_user_profile(db: Session, user_uid: str, profile: str) -> KakaoUser:

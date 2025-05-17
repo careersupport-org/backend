@@ -15,6 +15,19 @@ class LoginResponse(BaseModel):
         description="토큰 타입"
     )
 
+
+    user_id: str = Field(
+        description="사용자 ID"
+    )
+
+    nickname: str = Field(
+        description="사용자 닉네임"
+    )
+
+    profile_image: str = Field(
+        description="사용자 프로필 이미지 URL"
+    )
+
     class Config:
         json_schema_extra = {
             "example": {

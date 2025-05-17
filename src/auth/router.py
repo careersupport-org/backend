@@ -76,7 +76,10 @@ async def kakao_callback(code: str, db: Session = Depends(get_db)):
         return LoginResponse(
             code="200",
             access_token=access_token,
-            token_type="bearer"
+            token_type="bearer",
+            user_id=user.unique_id,
+            nickname=user.nickname,
+            profile_image=user.profile_image
         )
 
 
